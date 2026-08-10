@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Borongan Transport · Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="assets/css/admin-dashboard.css" />
+</head>
+<body>
+<button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="p-4 border-b border-gray-200">
+    <div class="flex items-center gap-3">
+      <div class="logo-circle">
+        <img src="images/borongan-logo.jpg" alt="Borongan Transport" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23b22234%22/%3E%3Ctext x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22%3EB%3C/text%3E%3C/svg%3E'">
+      </div>
+      <div><div class="text-slate-800 font-bold text-sm">ADMIN DASHBOARD</div></div>
+    </div>
+  </div>
+  <div class="py-2">
+    <button class="sidebar-item active" data-page="dashboard"> Dashboard</button>
+    <button class="sidebar-item" data-page="drivers"> Driver Management</button>
+    <button class="sidebar-item" data-page="vehicles"> Vehicle Management</button>
+    <button class="sidebar-item" data-page="qr"> QR Code Management</button>
+    <button class="sidebar-item" data-page="payment"> Payment Collection</button>
+    <button class="sidebar-item" data-page="transactions"> Transaction History</button>
+    <button class="sidebar-item" data-page="reports"> Reports</button>
+    <button class="sidebar-item" data-page="settings"> Settings</button>
+    <button class="sidebar-item" onclick="logout()" style="border-top:1px solid #e2e8f0; margin-top:0.5rem; padding-top:1rem;"> Logout</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main-content">
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page-section active">
+    <div class="dashboard-header">
+      <div class="greeting">
+        <h1>Dashboard</h1>
+        <p>Welcome back, <span class="font-semibold text-primary" id="adminGreetingName">Admin</span> · Last updated: <span id="lastUpdatedTime">--</span></p>
+      </div>
+      <div class="header-right">
+        <div class="search-box">
+          <input type="text" placeholder="Search drivers, vehicles..." id="globalSearch" onkeydown="if(event.key==='Enter') globalSearch()">
+          <button onclick="globalSearch()"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+      <div class="stat-card card-blue">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Total Drivers</div>
+            <div class="value" id="statDrivers">0</div>
+            <div class="sub"><span class="text-green">●</span> <span id="statActiveDrivers">0</span> Active</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-red">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Total Vehicles</div>
+            <div class="value" id="statVehicles">0</div>
+            <div class="sub"><span class="text-green">●</span> <span id="statActiveVehicles">0</span> Active</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-green">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Today's Collection</div>
+            <div class="value" id="statTodayCollect">₱0</div>
+            <div class="sub"><span class="trend neutral" id="todayTrend">● No data</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-purple">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Monthly Collection</div>
+            <div class="value" id="statMonthlyCollect">₱0</div>
+            <div class="sub"><span class="trend neutral">●</span> <span id="monthlyTransCount">0</span> transactions</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-yellow">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Pending Payments</div>
+            <div class="value" id="statPending">0</div>
+            <div class="sub">Needs action</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-teal">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">QR Codes</div>
+            <div class="value" id="statQR">0</div>
+            <div class="sub">Total active</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-blue">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Active Today</div>
+            <div class="value" id="statActiveToday">0</div>
+            <div class="sub">With payments</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card card-orange">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="label">Registered Vehicles</div>
+            <div class="value" id="statRegVehicles">0</div>
+            <div class="sub">All types</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <button class="btn-primary justify-center" onclick="openModal('driverModal')"> Add Driver</button>
+      <button class="btn-primary justify-center" onclick="openModal('vehicleModal')"> Add Vehicle</button>
+      <button class="btn-primary justify-center" onclick="document.querySelector('[data-page=payment]').click()"> Collect Payment</button>
+      <button class="btn-outline justify-center" onclick="document.querySelector('[data-page=reports]').click()"> Generate Report</button>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-5 mb-5">
+      <div class="lg:col-span-2 table-card">
+        <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+          <h3 class="font-bold text-gray-800 text-sm"> Daily Collection (Last 7 Days)</h3>
+          <div class="flex gap-1">
+            <button class="btn-primary btn-sm" onclick="updateChart('bar')"><i class="fas fa-chart-bar"></i></button>
+            <button class="btn-outline btn-sm" onclick="updateChart('line')"><i class="fas fa-chart-line"></i></button>
+          </div>
+        </div>
+        <div style="position:relative;height:200px;"><canvas id="collectionChart"></canvas></div>
+      </div>
+      <div class="table-card">
+        <h3 class="font-bold text-gray-800 mb-3 text-sm"> Recent Activities</h3>
+        <div id="recentActivities" class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+          <div class="text-center py-4 text-gray-400 text-sm">No recent activities</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-gray-800 text-sm"> Recent Transactions</h3>
+        <button class="btn-outline btn-sm" onclick="document.querySelector('[data-page=transactions]').click()">View All</button>
+      </div>
+      <div class="max-h-[250px] overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 bg-white border-b border-gray-200">
+            <tr class="text-left text-gray-600">
+              <th class="py-2">Driver</th>
+              <th class="py-2">Vehicle</th>
+              <th class="py-2">Amount</th>
+              <th class="py-2">Time</th>
+            </tr>
+          </thead>
+          <tbody id="recentTable">
+            <tr><td colspan="4"><div class="empty-state py-3"><i class="fas fa-inbox"></i><p class="text-sm">No transactions yet</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRIVER MANAGEMENT -->
+  <div id="page-drivers" class="page-section">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+      <h1 class="text-2xl font-bold text-gray-800">Driver Management</h1>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn-primary" onclick="openModal('driverModal')"><i class="fas fa-plus"></i> Add Driver</button>
+        <input type="text" id="driverSearch" class="input-field input-field-sm w-40" placeholder="Search..." oninput="filterDrivers()">
+        <select id="driverSort" class="input-field input-field-sm w-32" onchange="filterDrivers()"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="name">Name</option></select>
+      </div>
+    </div>
+    <div class="table-card">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-200 text-left text-gray-600"><th class="py-2">Photo</th><th class="py-2">ID</th><th class="py-2">Name</th><th class="py-2">Vehicle</th><th class="py-2">Contact</th><th class="py-2">License</th><th class="py-2">Status</th><th class="py-2">Actions</th></tr></thead>
+        <tbody id="driverTable"><tr><td colspan="8"><div class="empty-state py-4"><i class="fas fa-user-slash"></i><h3>No drivers found</h3><p>Click "Add Driver" to register</p></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VEHICLE MANAGEMENT -->
+  <div id="page-vehicles" class="page-section">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+      <h1 class="text-2xl font-bold text-gray-800">Vehicle Management</h1>
+      <div class="flex gap-2 flex-wrap">
+        <button class="btn-primary" onclick="openModal('vehicleModal')"><i class="fas fa-plus"></i> Add Vehicle</button>
+        <button class="btn-outline btn-sm" onclick="syncVehiclesFromDrivers()"><i class="fas fa-sync"></i> Sync</button>
+        <input type="text" id="vehicleSearch" class="input-field input-field-sm w-40" placeholder="Search..." oninput="renderVehicles()">
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="mb-3 text-sm text-gray-500 flex gap-4 flex-wrap"><span>Total: <strong id="vehicleCount">0</strong></span><span><span class="text-green">●</span> Active: <strong id="activeVehicleCount">0</strong></span><span><span class="text-red">●</span> Inactive: <strong id="inactiveVehicleCount">0</strong></span></div>
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-200 text-left text-gray-600"><th class="py-2">Plate</th><th class="py-2">Type</th><th class="py-2">Driver</th><th class="py-2">Status</th><th class="py-2">Actions</th></tr></thead>
+        <tbody id="vehicleTable"><tr><td colspan="5"><div class="empty-state py-4"><i class="fas fa-truck"></i><h3>No vehicles</h3></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- QR CODE MANAGEMENT -->
+  <div id="page-qr" class="page-section">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">QR Code Management</h1>
+    <div class="table-card">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-200 text-left text-gray-600"><th class="py-2">Driver</th><th class="py-2">Vehicle</th><th class="py-2">QR Code</th><th class="py-2">Status</th><th class="py-2">Last Scanned</th><th class="py-2">Times Used</th><th class="py-2">Actions</th></tr></thead>
+        <tbody id="qrTable"><tr><td colspan="7"><div class="empty-state py-4"><i class="fas fa-qrcode"></i><h3>No QR codes</h3></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAYMENT COLLECTION -->
+  <div id="page-payment" class="page-section">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Payment Collection</h1>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="table-card">
+        <h3 class="font-bold text-gray-800 mb-3">Scan / Search</h3>
+        <div class="text-center py-4">
+          <div class="text-6xl text-gray-300 mb-4"><i class="fas fa-qrcode"></i></div>
+          <div class="flex gap-2"><input type="text" id="qrScanInput" class="input-field" placeholder="Driver ID, plate, or name" onkeydown="if(event.key==='Enter') scanQR()"><button class="btn-primary" onclick="scanQR()"><i class="fas fa-search"></i> Find</button></div>
+        </div>
+      </div>
+      <div class="table-card" id="paymentResult">
+        <h3 class="font-bold text-gray-800 mb-3">Payment Details</h3>
+        <div id="paymentDetails" class="text-center py-8 text-gray-400"><i class="fas fa-credit-card text-4xl block mb-2"></i>Search for a driver</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTION HISTORY -->
+  <div id="page-transactions" class="page-section">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+      <h1 class="text-2xl font-bold text-gray-800">Transaction History</h1>
+      <div class="flex gap-2 flex-wrap">
+        <input type="text" id="transSearch" class="input-field input-field-sm w-40" placeholder="Search..." oninput="renderTransactions()">
+        <input type="date" id="transDate" class="input-field input-field-sm w-36" onchange="renderTransactions()">
+        <button class="btn-primary btn-sm" onclick="renderTransactions()"><i class="fas fa-filter"></i> Filter</button>
+        <button class="btn-outline btn-sm" onclick="exportTransactionsPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+        <button class="btn-outline btn-sm" onclick="exportTransactionsExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <table class="w-full text-sm">
+        <thead><tr class="border-b border-gray-200 text-left text-gray-600"><th class="py-2">Receipt</th><th class="py-2">Driver</th><th class="py-2">Vehicle</th><th class="py-2">Amount</th><th class="py-2">Date</th><th class="py-2">Time</th><th class="py-2">Actions</th></tr></thead>
+        <tbody id="transTable"><tr><td colspan="7"><div class="empty-state py-4"><i class="fas fa-receipt"></i><h3>No transactions</h3></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div id="page-reports" class="page-section">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Reports</h1>
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Generate</h3><div class="space-y-3"><button class="btn-primary w-full" onclick="generateReport('daily')"><i class="fas fa-calendar-day"></i> Daily Report</button><button class="btn-primary w-full" onclick="generateReport('weekly')"><i class="fas fa-calendar-week"></i> Weekly Report</button><button class="btn-primary w-full" onclick="generateReport('monthly')"><i class="fas fa-calendar-alt"></i> Monthly Report</button><button class="btn-primary w-full" onclick="generateReport('yearly')"><i class="fas fa-calendar"></i> Yearly Report</button></div></div>
+      <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Summary</h3><div id="reportSummary"><p class="text-gray-400 text-sm">Select a report</p></div></div>
+    </div>
+    <div class="table-card" id="reportContainer"><h3 class="font-bold text-gray-800 mb-3">Report Data</h3><div id="reportData"><p class="text-gray-400 text-center py-8">Generate a report</p></div></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="page-settings" class="page-section">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Settings</h1>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Vehicle Fees</h3><div class="space-y-3"><div class="flex items-center justify-between"><span>Tricycle</span><input type="number" id="feeTricycle" class="input-field input-field-sm w-28" value="5"></div><div class="flex items-center justify-between"><span>Jeepney</span><input type="number" id="feeJeepney" class="input-field input-field-sm w-28" value="60"></div><div class="flex items-center justify-between"><span>Multicab</span><input type="number" id="feeMulticab" class="input-field input-field-sm w-28" value="60"></div><div class="flex items-center justify-between"><span>Bus</span><input type="number" id="feeBus" class="input-field input-field-sm w-28" value="100"></div><button class="btn-primary w-full mt-3" onclick="saveFees()"><i class="fas fa-save"></i> Save</button></div></div>
+      <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Admin Profile</h3><div class="space-y-3"><input type="text" id="adminName" class="input-field" value="Administrator"><input type="email" id="adminEmail" class="input-field" value="admin@borongan.gov.ph"><input type="password" id="adminPassword" class="input-field" placeholder="New Password"><input type="password" id="adminConfirmPassword" class="input-field" placeholder="Confirm"><button class="btn-primary w-full" onclick="updateAdmin()"><i class="fas fa-save"></i> Update</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="driverModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-4" id="driverModalTitle">Add Driver</h2><form id="driverForm"><input type="hidden" id="editDriverId"><div class="space-y-3">
+    <!-- Photo Upload -->
+    <div class="text-center">
+      <div id="photoPreviewContainer">
+        <div id="photoPlaceholder" class="photo-preview-placeholder">
+          <i class="fas fa-user"></i>
+        </div>
+        <img id="photoPreview" class="photo-preview" style="display:none;" alt="Driver Photo">
+      </div>
+      <div class="file-input-wrapper mt-2">
+        <button type="button" class="btn-outline btn-sm"><i class="fas fa-camera"></i> Upload Photo</button>
+        <input type="file" id="dPhoto" accept="image/*" onchange="previewPhoto(event)">
+      </div>
+    </div>
+    <input type="text" id="dFullName" class="input-field" placeholder="Full Name" required>
+    <input type="text" id="dAddress" class="input-field" placeholder="Address">
+    <input type="text" id="dContact" class="input-field" placeholder="Contact">
+    <input type="date" id="dBirthdate" class="input-field">
+    <select id="dGender" class="input-field"><option value="">Gender</option><option value="Male">Male</option><option value="Female">Female</option></select>
+    <select id="dVehicleType" class="input-field" required><option value="">Vehicle Type</option><option value="Tricycle">Tricycle</option><option value="Jeepney">Jeepney</option><option value="Multicab">Multicab</option><option value="Bus">Bus</option></select>
+    <input type="text" id="dPlateNumber" class="input-field" placeholder="Plate Number">
+    <input type="text" id="dLicenseNo" class="input-field" placeholder="License Number">
+    <input type="text" id="dUsername" class="input-field" placeholder="Username" required>
+    <input type="password" id="dPassword" class="input-field" placeholder="Password">
+  </div><div class="flex gap-3 mt-4"><button type="submit" class="btn-primary flex-1" id="driverSubmitBtn"><i class="fas fa-save"></i> <span id="driverSubmitText">Save</span></button><button type="button" class="btn-outline flex-1" onclick="closeModal('driverModal')">Cancel</button></div></form></div></div>
+
+<div class="modal-overlay" id="vehicleModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-4" id="vehicleModalTitle">Add Vehicle</h2><form id="vehicleForm"><input type="hidden" id="editVehiclePlate"><div class="space-y-3"><input type="text" id="vPlateNumber" class="input-field" placeholder="Plate Number" required><select id="vVehicleType" class="input-field" required><option value="">Type</option><option value="Tricycle">Tricycle</option><option value="Jeepney">Jeepney</option><option value="Multicab">Multicab</option><option value="Bus">Bus</option></select><select id="vDriver" class="input-field"><option value="">Unassigned</option></select><select id="vStatus" class="input-field"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div><div class="flex gap-3 mt-4"><button type="submit" class="btn-primary flex-1" id="vehicleSubmitBtn"><i class="fas fa-save"></i> <span id="vehicleSubmitText">Save</span></button><button type="button" class="btn-outline flex-1" onclick="closeModal('vehicleModal')">Cancel</button></div></form></div></div>
+
+<div class="modal-overlay" id="confirmModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-2" id="confirmTitle">Confirm</h2><p class="text-gray-600 mb-4" id="confirmMessage">This action cannot be undone.</p><div class="flex gap-3"><button class="btn-primary flex-1" id="confirmYesBtn" style="background:var(--red);"><i class="fas fa-trash"></i> Delete</button><button class="btn-outline flex-1" onclick="closeModal('confirmModal')">Cancel</button></div></div></div>
+
+<script src="assets/js/admin-dashboard.js"></script>
+</body>
+</html>

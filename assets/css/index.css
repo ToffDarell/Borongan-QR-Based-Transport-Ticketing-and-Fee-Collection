@@ -1,0 +1,135 @@
+.bg-primary { background-color: #b22234; }
+        .hover\:bg-primary-dark:hover { background-color: #8f1a2a; }
+        .text-primary { color: #b22234; }
+        .border-primary { border-color: #b22234; }
+        .ring-primary { --tw-ring-color: #b22234; }
+
+        .btn-primary {
+            background-color: #b22234;
+            color: white;
+            padding: 0.7rem 2rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #8f1a2a;
+        }
+        .btn-outline {
+            background: transparent;
+            color: #b22234;
+            padding: 0.7rem 2rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            border: 2px solid #b22234;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-outline:hover {
+            background: #b22234;
+            color: white;
+        }
+
+        .section-light {
+            background: #f8fafc;
+        }
+
+        .card-step {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .card-step:hover {
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+        }
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 9999px;
+            background: #b22234;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .icon-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 64px;
+            border-radius: 9999px;
+            background: #fef2f2;
+            color: #b22234;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-item {
+            color: #4b5563;
+            font-weight: 500;
+            transition: color 0.2s;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-item:hover {
+            color: #b22234;
+            border-bottom-color: #b22234;
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            background: #1e2b3c;
+        }
+
+        .vehicle-photo-box {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 600px;
+            overflow: hidden;
+            background: #f3f4f6;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 0 auto;
+            border-radius: 0;
+        }
+        .vehicle-photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+        }
+        .vehicle-photo-box .placeholder-text {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }

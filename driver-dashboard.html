@@ -1,0 +1,446 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Borongan Transport · Driver Dashboard</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    </script>
+    
+  <link rel="stylesheet" href="assets/css/driver-dashboard.css" />
+</head>
+<body>
+
+    <button class="mobile-toggle" id="mobileToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Hidden receipt print area (shows only during receipt print) -->
+    <div class="receipt-print-area" id="receiptPrintArea">
+        <div class="receipt-card" id="receiptCard">
+            <div class="header">
+                <h2>BORONGAN TRANSPORT</h2>
+                <p>Official Receipt</p>
+            </div>
+            <div class="row"><span>Receipt #:</span><span id="rReceiptNo">--</span></div>
+            <div class="row"><span>Date:</span><span id="rDate">--</span></div>
+            <div class="row"><span>Time:</span><span id="rTime">--</span></div>
+            <div class="row"><span>Driver:</span><span id="rDriver">--</span></div>
+            <div class="row"><span>Plate:</span><span id="rPlate">--</span></div>
+            <div class="row"><span>Vehicle:</span><span id="rVehicle">--</span></div>
+            <div class="row total-row"><span>Amount:</span><span id="rAmount">--</span></div>
+            <div class="row"><span>Status:</span><span id="rStatus" style="color:#16a34a;font-weight:bold;">PAID</span></div>
+            <div class="footer">Thank you for paying!</div>
+        </div>
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <img src="images/borongan-logo.jpg" alt="Borongan Transport" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23b22234%22/%3E%3Ctext x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22%3EB%3C/text%3E%3C/svg%3E'">
+                </div>
+                <div class="brand">
+                    DRIVER DASHBOARD
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-items">
+                <button class="sidebar-item active" data-page="dashboard">
+                     Dashboard
+                </button>
+                <button class="sidebar-item" data-page="qr">
+                     Digital Driver ID
+                </button>
+                <button class="sidebar-item" data-page="payments">
+                     Payment History
+                </button>
+                <button class="sidebar-item" data-page="profile">
+                     My Profile
+                </button>
+                <button class="sidebar-item logout-item" onclick="logout()">
+                     Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== MAIN ===== -->
+    <div class="main-content">
+
+        <!-- ===== DASHBOARD ===== -->
+        <div id="page-dashboard" class="page-section active">
+            <div class="dashboard-header">
+                <div class="greeting">
+                    <h1>Dashboard</h1>
+                    <p>Welcome back, <span class="font-semibold text-primary" id="driverName">Driver</span> · Last updated: <span id="lastUpdatedTime">--</span></p>
+                </div>
+                <div class="text-right text-sm text-gray-500">
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                <div class="stat-card card-blue">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="label">Vehicle</div>
+                            <div class="value" id="statVehicle">--</div>
+                            <div class="sub"><span class="text-green">●</span> <span id="statPlate">--</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card card-green">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="label">Today's Fee</div>
+                            <div class="value" id="todayPayment">₱0</div>
+                            <div class="sub"><span id="paymentStatusBadge" class="status-badge paid">Paid Today</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card card-purple">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="label">Payments</div>
+                            <div class="value" id="totalPayments">0</div>
+                            <div class="sub">Total successful</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card card-orange">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="label">Latest Payment</div>
+                            <div class="value text-sm font-semibold" id="lastPayment">--</div>
+                            <div class="sub" id="lastPaymentTime">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="paymentReminder" class="mb-5"></div>
+
+            <!-- Two-column: QR + Activities -->
+            <div class="grid lg:grid-cols-2 gap-5 mb-5">
+                <div class="table-card flex flex-col items-center">
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm"> My QR Code</h3>
+                    <div class="qr-compact-card">
+                        <div class="qr-row">
+                            <div class="qr-box">
+                                <div class="qr-container">
+                                    <div id="qrCode" style="width:130px;height:130px;"></div>
+                                </div>
+                                <div class="text-center mt-1">
+                                    <span class="text-xs font-bold text-primary bg-primary-light px-3 py-0.5 rounded-full">VALID</span>
+                                </div>
+                            </div>
+                            <div class="qr-info">
+                                <div class="qr-info-item">
+                                    <span class="label">Driver</span>
+                                    <span id="qrDriverName" class="value highlight">--</span>
+                                </div>
+                                <div class="qr-info-item">
+                                    <span class="label">Vehicle</span>
+                                    <span id="qrVehicleType" class="value">--</span>
+                                </div>
+                                <div class="qr-info-item">
+                                    <span class="label">Plate #</span>
+                                    <span id="qrPlateNumber" class="value">--</span>
+                                </div>
+                                <div class="qr-info-item">
+                                    <span class="label">Fee</span>
+                                    <span id="qrFee" class="value text-primary font-bold">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="qr-actions no-print">
+                            <button class="btn-primary btn-sm" onclick="downloadQR()"> Download</button>
+                            <button class="btn-outline btn-sm" onclick="navigateTo('qr')"> Fullscreen</button>
+                            <button class="btn-outline btn-sm" onclick="shareQR()"> Share</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm"> Recent Activities</h3>
+                    <div id="recentActivities" class="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                        <div class="text-center py-4 text-gray-400 text-sm">No recent activities</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Info -->
+            <div class="table-card">
+                <h3 class="font-bold text-gray-800 mb-3 text-sm"> Vehicle Information</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase">Type</div>
+                        <div class="font-semibold text-gray-800" id="infoVehicleType">--</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase">Plate</div>
+                        <div class="font-semibold text-gray-800" id="infoPlateNumber">--</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase">Fee</div>
+                        <div class="font-semibold text-primary" id="infoFee">--</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase">Status</div>
+                        <div><span class="status-badge active" id="infoStatus">Active</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== DIGITAL DRIVER ID ===== -->
+        <div id="page-qr" class="page-section">
+            <div class="max-w-3xl mx-auto">
+                <h1 class="text-2xl font-bold text-gray-800 mb-5">Digital Driver ID</h1>
+
+                <div id="printContainer">
+                    <div class="digital-id-card">
+                        <div class="id-header">
+                            <div class="logo-row">
+                                <div class="logo-circle">
+                                    <img src="images/borongan-logo.jpg" alt="Borongan Transport" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23b22234%22/%3E%3Ctext x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22%3EB%3C/text%3E%3C/svg%3E'">
+                                </div>
+                                <div class="title-group">
+                                    <h1>BORONGAN TRANSPORT SYSTEM</h1>
+                                    <div class="sub">Driver Identification Card</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="id-body">
+                            <div class="id-top-row">
+                                <div class="id-qr-section">
+                                    <div class="id-qr-box">
+                                        <div id="qrCodeFull"></div>
+                                    </div>
+                                    <div class="id-qr-label">Scan to Verify</div>
+                                    <span class="id-verify-badge"> Valid ID</span>
+                                    <div class="id-qr-footer">
+                                         Reg. No. <span id="displayRegNumber">--</span>
+                                    </div>
+                                </div>
+
+                                <div class="id-photo-area">
+                                    <div class="id-photo-large" id="photoDisplayLarge">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="driver-id-badge">
+                                         DRIVER NO. <span id="displayIdBadge">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="id-info-grid">
+                                <div class="id-info-item full-width">
+                                    <span class="info-label"> Full Name</span>
+                                    <span id="displayName" class="info-value highlight">--</span>
+                                </div>
+                                <div class="id-info-item">
+                                    <span class="info-label"> Birthdate</span>
+                                    <span id="displayBirthdate" class="info-value">--</span>
+                                </div>
+                                <div class="id-info-item">
+                                    <span class="info-label"> Gender</span>
+                                    <span id="displayGender" class="info-value">--</span>
+                                </div>
+                                <div class="id-info-item">
+                                    <span class="info-label"> Contact</span>
+                                    <span id="displayContact" class="info-value">--</span>
+                                </div>
+                                <div class="id-info-item">
+                                    <span class="info-label"> Vehicle</span>
+                                    <span id="displayVehicle" class="info-value">--</span>
+                                </div>
+                                <div class="id-info-item">
+                                    <span class="info-label"> Plate #</span>
+                                    <span id="displayPlate" class="info-value">--</span>
+                                </div>
+                                <div class="id-info-item full-width">
+                                    <span class="info-label"> License No.</span>
+                                    <span id="displayLicense" class="info-value">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="id-actions no-print">
+                    <button onclick="downloadQRFull()" class="btn-download">
+                         Download ID
+                    </button>
+                    <button onclick="printQRCard()" class="btn-secondary">
+                         Print ID
+                    </button>
+                    <button onclick="navigateTo('dashboard')" class="btn-secondary">
+                         Back
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PAYMENT HISTORY ===== -->
+        <div id="page-payments" class="page-section">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Payment History</h1>
+            <div class="table-card">
+                <div class="payment-summary">
+                    <div class="payment-summary-item">
+                        <span class="label">Total Paid</span>
+                        <span class="amount" id="totalPaidAmount">₱0</span>
+                    </div>
+                    <div class="payment-summary-item">
+                        <span class="label">This Month</span>
+                        <span class="amount" id="monthPaidAmount">₱0</span>
+                    </div>
+                    <div class="payment-summary-item">
+                        <span class="label">Payments</span>
+                        <span class="font-semibold" id="paymentCount">0</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                    <div class="text-sm text-gray-500">Total: <span id="paymentCount2">0</span> payments</div>
+                    <div class="flex gap-2">
+                        <input type="text" id="paymentSearch" class="input-field" style="padding:0.4rem 0.8rem;font-size:0.8rem;width:160px;" placeholder="Search...">
+                        <select id="paymentFilter" class="input-field" style="padding:0.4rem 0.8rem;font-size:0.8rem;width:130px;">
+                            <option value="all">All Status</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-left text-gray-600">
+                            <th class="py-2">Receipt #</th>
+                            <th class="py-2">Date</th>
+                            <th class="py-2">Time</th>
+                            <th class="py-2">Amount</th>
+                            <th class="py-2">Status</th>
+                            <th class="py-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentHistoryTable">
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state py-4"><i class="fas fa-receipt"></i>
+                                    <h3>No payments found</h3>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== PROFILE ===== -->
+        <div id="page-profile" class="page-section">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h1 class="text-2xl font-bold text-gray-800">My Profile</h1>
+                <div class="flex gap-2 flex-wrap">
+                    <button class="btn-primary btn-sm" onclick="openEditProfileModal()"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-outline btn-sm" onclick="showChangePassword()"><i class="fas fa-key"></i> Password</button>
+                    <button class="btn-outline btn-sm" onclick="document.getElementById('editPhoto').click()"><i class="fas fa-camera"></i> Photo</button>
+                </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="table-card">
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm">Personal Information</h3>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="profile-photo" id="profilePhoto" style="width:48px;height:48px;font-size:1.2rem;">D</div>
+                        <div>
+                            <div class="font-bold text-base" id="profileName">--</div>
+                            <div class="text-sm text-gray-500" id="profileId">--</div>
+                        </div>
+                    </div>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Full Name</span><span class="font-medium" id="profileFullName">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Address</span><span class="font-medium" id="profileAddress">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Contact</span><span class="font-medium" id="profileContact">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Birthdate</span><span class="font-medium" id="profileBirthdate">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Gender</span><span class="font-medium" id="profileGender">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">License</span><span class="font-medium" id="profileLicense">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Username</span><span class="font-medium" id="profileUsername">--</span></div>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm">Vehicle Information</h3>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Vehicle Type</span><span class="font-medium" id="profileVehicleType">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Plate</span><span class="font-medium" id="profilePlateNumber">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Fee</span><span class="font-medium text-primary" id="profileFee">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Status</span><span><span class="status-badge active" id="profileStatus">Active</span></span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">Registered</span><span class="font-medium" id="profileRegDate">--</span></div>
+                        <div class="flex justify-between border-b border-gray-100 py-1.5"><span class="text-gray-500">License Exp.</span><span class="font-medium" id="profileLicenseExp">--</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== EDIT PROFILE MODAL ===== -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal-box">
+            <h2>Edit Profile</h2>
+            <form id="editProfileForm">
+                <div class="photo-upload-container mb-4">
+                    <div class="preview" id="photoPreview"></div>
+                    <div class="upload-info">
+                        <label for="editPhoto" class="cursor-pointer">Change Photo</label>
+                        <div class="text-xs text-gray-500">Click to upload</div>
+                        <input type="file" id="editPhoto" accept="image/*" class="hidden">
+                    </div>
+                </div>
+                <div class="modal-grid">
+                    <div class="section-title">Personal Information</div>
+                    <input type="text" id="editFullName" class="input-field" placeholder="Full Name" required>
+                    <input type="text" id="editAddress" class="input-field" placeholder="Address" required>
+                    <input type="tel" id="editContact" class="input-field" placeholder="Contact" required>
+                    <input type="date" id="editBirthdate" class="input-field" required>
+                    <select id="editGender" class="input-field" required>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <input type="text" id="editLicenseNo" class="input-field" placeholder="License Number" required>
+                    <input type="text" id="editUsername" class="input-field" placeholder="Username" required>
+                    <div class="section-title">Vehicle Information</div>
+                    <select id="editVehicleType" class="input-field" required>
+                        <option value="Tricycle">Tricycle</option>
+                        <option value="Jeepney">Jeepney</option>
+                        <option value="Multicab">Multicab</option>
+                        <option value="Bus">Bus</option>
+                    </select>
+                    <input type="text" id="editPlateNumber" class="input-field" placeholder="Plate Number" required>
+                    <input type="date" id="editLicenseExp" class="input-field" required>
+                    <div class="text-sm text-gray-500 flex items-center">Registered: <span id="regDateDisplay" class="font-medium ml-1">--</span></div>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button type="submit" class="btn-primary flex-1"><i class="fas fa-save"></i> Save Changes</button>
+                    <button type="button" class="btn-outline flex-1" onclick="closeModal('editProfileModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+  <script src="assets/js/driver-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Borongan Transport · QR Fee Collection</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    
+  <link rel="stylesheet" href="assets/css/index.css" />
+</head>
+
+<body>
+
+    <header class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md">
+                        <img src="images/borongan-logo.jpg" alt="Borongan Transport Logo"
+                             class="w-8 h-8 object-contain">
+                    </div>
+                    <div class="hidden sm:block">
+                        <div class="text-sm font-bold text-primary tracking-wide">BORONGAN QRTRANSIT</div>
+                        <div class="text-xs text-gray-500">QR Fee Collection System</div>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#home" class="nav-item">Home</a>
+                    <a href="#about" class="nav-item">About</a>
+                    <a href="#features" class="nav-item">Features</a>
+                    <a href="#contact" class="nav-item">Contact</a>
+                    <a href="login.html" class="btn-primary text-sm px-6 py-2.5">
+                         Login
+                    </a>
+                </div>
+
+           
+                <div class="md:hidden flex items-center gap-4">
+                    <a href="login.html" class="btn-primary text-sm px-4 py-2">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </a>
+                    <button id="mobileToggle" class="text-gray-600 hover:text-primary text-2xl focus:outline-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+
+            
+            <div id="mobileMenu" class="md:hidden hidden pb-4 border-t border-gray-100">
+                <div class="flex flex-col gap-3 pt-3">
+                    <a href="#home" class="nav-item block">Home</a>
+                    <a href="#about" class="nav-item block">About</a>
+                    <a href="#features" class="nav-item block">Features</a>
+                    <a href="#contact" class="nav-item block">Contact</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+    <section id="home" class="relative bg-white overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <!-- Left side - Square Image -->
+                <div class="flex flex-col items-center">
+                    <div class="vehicle-photo-box">
+                        <img src="images/vehicle.jpg" alt="Public Utility Vehicle" />
+                    </div>
+                </div>
+
+                
+                <div>
+                    <h1 class="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
+                        QR-Based Ticketing for Borongan City
+                    </h1>
+                    <p class="text-gray-600 text-lg mt-4 leading-relaxed">
+                        The Borongan Transport QR Ticketing System is a modern solution designed to streamline public transportation in Borongan City. Passengers can easily pay fares using QR codes, while drivers and operators benefit from real-time tracking and automated fee collection.
+                    </p>
+                    <p class="text-gray-600 text-base mt-3 leading-relaxed">
+                        Built for <strong>tricycles, jeepneys, multicabs, and buses</strong>  this system ensures transparency, efficiency, and convenience for both drivers and commuters.
+                    </p>
+                    <div class="flex flex-wrap gap-4 mt-8">
+                        <a href="login.html" class="btn-primary text-base px-8 py-3">
+                             Login
+                        </a>
+                        <a href="#about" class="btn-outline text-base px-8 py-3">
+                             Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+   
+    <section id="about" class="section-light py-16 lg:py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="inline-block bg-red-100 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-3">
+                     About 
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900">QR-Based Transport Fee Collection</h2>
+                <p class="text-gray-600 mt-4 leading-relaxed">
+                    The QR-Based Transport Fee Collection System is a web-based application developed to improve the collection and monitoring of transport fees for public utility vehicles operating in Borongan City.
+                </p>
+                <p class="text-gray-600 mt-3 leading-relaxed">
+                    The system allows drivers of tricycles, jeepneys, multicabs, and buses to register their information and receive a unique QR code. During fee collection, the QR code is scanned to automatically identify the driver, display the correct transport fee based on the vehicle type, record the payment, and print an official receipt.
+                </p>
+                <p class="text-gray-600 mt-3 leading-relaxed">
+                    The system helps reduce manual recording, improve transparency, and provide accurate reports for transport fee collection.
+                </p>
+            </div>
+
+            <!-- Steps -->
+            <div class="grid md:grid-cols-4 gap-6 mt-8">
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">Driver Registration</h4>
+                    <p class="text-sm text-gray-500 mt-1">Driver registers vehicle information.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">Admin Approval</h4>
+                    <p class="text-sm text-gray-500 mt-1">Admin approves the registration.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">QR Code Generation</h4>
+                    <p class="text-sm text-gray-500 mt-1">System generates a unique QR Code.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">QR Scanning</h4>
+                    <p class="text-sm text-gray-500 mt-1">Collector scans the QR Code.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">Fee Display</h4>
+                    <p class="text-sm text-gray-500 mt-1">System automatically displays the required fee.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">Payment Recording</h4>
+                    <p class="text-sm text-gray-500 mt-1">Payment is recorded.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">Receipt Printing</h4>
+                    <p class="text-sm text-gray-500 mt-1">Receipt is printed.</p>
+                </div>
+                <div class="card-step">
+                    <h4 class="font-bold text-gray-800">Admin Dashboard</h4>
+                    <p class="text-sm text-gray-500 mt-1">Transaction appears in the Admin Dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section id="features" class="py-16 lg:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="inline-block bg-red-100 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-3">
+                     Key Features
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900">Designed to simplify transport fee collection and monitoring</h2>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <h4 class="font-bold text-gray-800 text-lg">QR Code Verification</h4>
+                    <p class="text-sm text-gray-500 mt-2">Every registered driver receives a unique QR code that is scanned during payment.</p>
+                </div>
+                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <h4 class="font-bold text-gray-800 text-lg">Automatic Fee Computation</h4>
+                    <p class="text-sm text-gray-500 mt-2">The system automatically computes the required fee.</p>
+                    <div class="mt-2 text-xs text-gray-600 space-y-0.5">
+                        <p>• Tricycle — ₱5</p>
+                        <p>• Jeepney — ₱60</p>
+                        <p>• Multicab — ₱60</p>
+                        <p>• Bus — ₱100</p>
+                    </div>
+                </div>
+                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <h4 class="font-bold text-gray-800 text-lg">Driver Registration</h4>
+                    <p class="text-sm text-gray-500 mt-2">Register drivers and vehicle information securely.</p>
+                </div>
+                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <h4 class="font-bold text-gray-800 text-lg">Payment Recording</h4>
+                    <p class="text-sm text-gray-500 mt-2">Every payment is automatically saved to the database.</p>
+                </div>
+                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <h4 class="font-bold text-gray-800 text-lg">Receipt Printing</h4>
+                    <p class="text-sm text-gray-500 mt-2">Print an official receipt using a thermal receipt printer after every payment.</p>
+                </div>
+                <div class="text-center p-6 rounded-2xl border border-gray-100 hover:shadow-lg transition">
+                    <h4 class="font-bold text-gray-800 text-lg">Reports & Monitoring</h4>
+                    <p class="text-sm text-gray-500 mt-2">Generate daily, weekly, monthly, and yearly collection reports.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-16 lg:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="inline-block bg-red-100 text-primary text-xs font-semibold px-4 py-1.5 rounded-full mb-3">
+                     Contact Us
+                </span>
+                <h2 class="text-3xl lg:text-4xl font-bold text-gray-900">Get in Touch</h2>
+                <p class="text-gray-600 mt-4">For inquiries regarding driver registration, transport fee collection, QR code verification, or technical support, please contact the Transport Management Office.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+                <div class="space-y-6">
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <h4 class="font-bold text-gray-800 text-lg"> Office Address</h4>
+                        <p class="text-gray-600 mt-2">Transport Management Office<br />Borongan City Hall<br />Borongan City, Eastern Samar</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <h4 class="font-bold text-gray-800 text-lg"> Email</h4>
+                        <p class="text-gray-600 mt-2">transport@borongan.gov.ph</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <h4 class="font-bold text-gray-800 text-lg"> Contact Number</h4>
+                        <p class="text-gray-600 mt-2">+63 (XXX) XXX-XXXX</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                        <h4 class="font-bold text-gray-800 text-lg"> Office Hours</h4>
+                        <p class="text-gray-600 mt-2">Monday – Friday<br />7:30 AM – 5:00 PM</p>
+                    </div>
+                </div>
+
+                
+                <div class="bg-gray-50 p-8 rounded-2xl border border-gray-100">
+                    <h4 class="font-bold text-gray-800 text-xl mb-6">Send Us a Message</h4>
+                    <form>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary outline-none transition" placeholder="Juan Dela Cruz" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary outline-none transition" placeholder="juan@example.com" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                            <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary outline-none transition" placeholder="Inquiry about..." />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                            <textarea rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary focus:border-primary outline-none transition" placeholder="Your message here..."></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary w-full justify-center text-base py-3">
+                             Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-gray-900 text-gray-300 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8 text-center md:text-left">
+                <div>
+                    <div class="flex items-center justify-center md:justify-start gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md">
+                            <img src="images/borongan-logo.jpg" alt="Borongan Transport Logo"
+                                 class="w-8 h-8 object-contain">
+                        </div>
+                        <span class="text-white font-bold text-lg">Borongan QRTransit</span>
+                    </div>
+                    <p class="text-sm">QR-Based Transport Fee Collection System</p>
+                    <p class="text-sm mt-1">Government Transport Management</p>
+                    <p class="text-sm">Borongan City, Eastern Samar</p>
+                </div>
+                <div>
+                    <h5 class="text-white font-semibold mb-3">Quick Links</h5>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#home" class="hover:text-primary transition">Home</a></li>
+                        <li><a href="#about" class="hover:text-primary transition">About</a></li>
+                        <li><a href="#features" class="hover:text-primary transition">Features</a></li>
+                        <li><a href="#contact" class="hover:text-primary transition">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="text-white font-semibold mb-3">System Access</h5>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="login.html" class="hover:text-primary transition"> Driver Login</a></li>
+                        <li><a href="admin-login.html" class="hover:text-primary transition"> Admin Login</a></li>
+                        <li><a href="register.html" class="hover:text-primary transition"> Driver Registration</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    
+
+  <script src="assets/js/index.js"></script>
+</body>
+</html>
