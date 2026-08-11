@@ -880,9 +880,25 @@ function processPayment(driverId, amount) {
         plateNumber: driver.plate_number || driver.plateNumber,
         amount, date: now.toISOString().split("T")[0], time: now.toTimeString().slice(0,5),
       };
-      printReceipt(trans);
-      document.getElementById("paymentDetails").innerHTML =
-        `<div class="text-center py-8 text-green-600"><i class="fas fa-check-circle text-4xl block mb-2"></i><div class="font-bold text-lg">Payment Received!</div><div class="text-sm">₱${amount} from ${driver.full_name || driver.fullName}</div><div class="text-xs text-gray-500 mt-2">Receipt: ${receiptNo} | ${trans.date} ${trans.time}</div></div>`;
+      // Store last transaction so the Print button can access it
+      window._lastReceipt = trans;
+      document.getElementById("paymentDetails").innerHTML = `
+        <div class="text-center py-6">
+          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+          </div>
+          <div class="font-bold text-lg text-green-700 mb-1">Payment Received!</div>
+          <div class="text-sm text-gray-600">₱${amount} from <strong>${driver.full_name || driver.fullName}</strong></div>
+          <div class="text-xs text-gray-400 mt-1 mb-4">Receipt: ${receiptNo} &nbsp;|&nbsp; ${trans.date} ${trans.time}</div>
+          <div class="flex gap-2 justify-center mt-3">
+            <button class="btn-primary" onclick="printReceipt(window._lastReceipt)">
+              <i class="fas fa-print mr-1"></i> Print Receipt
+            </button>
+            <button class="btn-outline" onclick="clearPayment()">
+              <i class="fas fa-plus mr-1"></i> New Payment
+            </button>
+          </div>
+        </div>`;
       showToast(`₱${amount} collected`, "success");
       sendNotification("Payment Collected", `₱${amount} received from ${driver.full_name || driver.fullName}`);
       addActivity("Payment Received", `${driver.full_name || driver.fullName} - ₱${amount}`);
