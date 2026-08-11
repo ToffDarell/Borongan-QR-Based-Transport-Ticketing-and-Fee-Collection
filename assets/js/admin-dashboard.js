@@ -88,6 +88,43 @@ function showToast(msg, type = "success") {
   }, 4000);
 }
 
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    osc.start(ctx.currentTime);
+    
+    osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    osc.stop(ctx.currentTime + 0.45);
+  } catch (e) {
+    console.error("Audio failed", e);
+  }
+}
+
+function sendNotification(title, message) {
+  playNotificationSound();
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, {
+      body: message,
+      icon: "images/borongan-logo.jpg"
+    });
+  }
+}
+
 function addActivity(action, details) {
   const now = new Date();
   let badgeClass = "updated";
@@ -176,6 +213,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.location.href = "admin-login.html";
     return;
   }
+  requestNotificationPermission();
 
   document
     .getElementById("mobileToggle")
@@ -846,6 +884,7 @@ function processPayment(driverId, amount) {
       document.getElementById("paymentDetails").innerHTML =
         `<div class="text-center py-8 text-green-600"><i class="fas fa-check-circle text-4xl block mb-2"></i><div class="font-bold text-lg">Payment Received!</div><div class="text-sm">₱${amount} from ${driver.full_name || driver.fullName}</div><div class="text-xs text-gray-500 mt-2">Receipt: ${receiptNo} | ${trans.date} ${trans.time}</div></div>`;
       showToast(`₱${amount} collected`, "success");
+      sendNotification("Payment Collected", `₱${amount} received from ${driver.full_name || driver.fullName}`);
       addActivity("Payment Received", `${driver.full_name || driver.fullName} - ₱${amount}`);
       await loadAllDataFromDB();
       updateDashboard(); renderTransactions(); updateChartData();
@@ -881,7 +920,19 @@ function printReceipt(trans) {
       <div class="row"><span class="label">Time</span><span class="value">${trans.time}</span></div>
       <div class="footer">Thank you!</div>
     </div>
-    <script>window.print(); setTimeout(() => { window.close(); }, 1000); <\/script>
+    <script>
+      function doPrint() {
+        if (window.hasPrinted) return;
+        window.hasPrinted = true;
+        setTimeout(() => {
+          window.print();
+          setTimeout(() => { window.close(); }, 500);
+        }, 500);
+      }
+      window.onload = doPrint;
+      document.addEventListener('DOMContentLoaded', doPrint);
+      setTimeout(doPrint, 800);
+    <\/script>
   `);
   printWindow.document.close();
 }
@@ -965,7 +1016,19 @@ function exportTransactionsPDF() {
     <table><thead><tr><th>Receipt<\/th><th>Driver<\/th><th>Vehicle<\/th><th>Amount<\/th><th>Date<\/th><th>Time<\/th><\/tr><\/thead><tbody>${rows}<\/tbody><\/table>
     <div class="total">Total Transactions: ${data.length} | Total Amount: &#8369;${total}<\/div>
     <div class="footer">Prepared by: ${document.getElementById("adminName").value || "Admin"}<\/div>
-    <script>window.print(); setTimeout(() => { window.close(); }, 1500);<\/script>
+    <script>
+      function doPrint() {
+        if (window.hasPrinted) return;
+        window.hasPrinted = true;
+        setTimeout(() => {
+          window.print();
+          setTimeout(() => { window.close(); }, 500);
+        }, 500);
+      }
+      window.onload = doPrint;
+      document.addEventListener('DOMContentLoaded', doPrint);
+      setTimeout(doPrint, 800);
+    <\/script>
   `);
   printWindow.document.close();
 }
