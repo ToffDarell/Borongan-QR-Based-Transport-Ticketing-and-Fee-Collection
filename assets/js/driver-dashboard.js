@@ -1,4 +1,53 @@
 // ===== DATA =====
+// Native HTML5 <dialog> styled Confirmation Modal Utility
+const ConfirmModal = {
+  show({ title, message, confirmText = "Confirm", cancelText = "Cancel", onConfirm }) {
+    let dialog = document.getElementById("nativeConfirmDialog");
+    if (!dialog) {
+      dialog = document.createElement("dialog");
+      dialog.id = "nativeConfirmDialog";
+      dialog.className = "confirm-dialog-modal";
+      dialog.innerHTML = `
+        <div class="confirm-dialog-content">
+          <h3 id="nativeConfirmTitle" class="confirm-dialog-title"></h3>
+          <p id="nativeConfirmMsg" class="confirm-dialog-msg"></p>
+          <div class="confirm-dialog-actions">
+            <button id="nativeConfirmCancelBtn" class="confirm-dialog-btn confirm-dialog-btn-cancel"></button>
+            <button id="nativeConfirmConfirmBtn" class="confirm-dialog-btn confirm-dialog-btn-confirm"></button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(dialog);
+    }
+
+    dialog.querySelector("#nativeConfirmTitle").textContent = title;
+    dialog.querySelector("#nativeConfirmMsg").textContent = message;
+    
+    const cancelBtn = dialog.querySelector("#nativeConfirmCancelBtn");
+    const confirmBtn = dialog.querySelector("#nativeConfirmConfirmBtn");
+    
+    cancelBtn.textContent = cancelText;
+    confirmBtn.textContent = confirmText;
+
+    const closeDialog = () => {
+      dialog.close();
+    };
+
+    cancelBtn.onclick = () => {
+      closeDialog();
+    };
+
+    confirmBtn.onclick = () => {
+      closeDialog();
+      if (typeof onConfirm === "function") {
+        onConfirm();
+      }
+    };
+
+    dialog.showModal();
+  }
+};
+
         let currentDriver = null;
         let driverTransactions = [];
         let tempPhotoDataURL = null;
@@ -561,11 +610,17 @@
                 .classList.toggle('open'); });
 
         window.logout = function() {
-            if (confirm('Logout?')) {
-                logDriverActivity('Logged out', 'fa-sign-out-alt', 'log-logout');
-                localStorage.removeItem('borongan_driver_session');
-                window.location.href = 'login.html';
-            }
+            ConfirmModal.show({
+                title: "Logout?",
+                message: "Are you sure you want to log out of the driver dashboard?",
+                confirmText: "Yes, logout",
+                cancelText: "Cancel",
+                onConfirm: function() {
+                    logDriverActivity('Logged out', 'fa-sign-out-alt', 'log-logout');
+                    localStorage.removeItem('borongan_driver_session');
+                    window.location.href = 'login.html';
+                }
+            });
         }
 
         function showToast(message, type = 'success') {

@@ -1,26 +1,32 @@
-﻿// Wait for DOM to be fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
+// Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', async function() {
             // Get driver data from URL parameter
             const urlParams = new URLSearchParams(window.location.search);
             const driverId = urlParams.get('id');
             
             let driver = null;
 
-            if (driverId) {
-                const stored = JSON.parse(localStorage.getItem('borongan_drivers') || '[]');
-                driver = stored.find(d => d.driverId === driverId);
-            }
-
-            // If still no driver, try to get from session
-            if (!driver) {
-                const session = localStorage.getItem('borongan_driver_session');
-                if (session) {
-                    try {
-                        const s = JSON.parse(session);
-                        const stored = JSON.parse(localStorage.getItem('borongan_drivers') || '[]');
-                        driver = stored.find(d => d.username === s.username || d.driverId === s.driverId);
-                    } catch (e) {}
+            try {
+                if (driverId) {
+                    const res = await fetch("api/drivers.php?id=" + driverId).then(r => r.json());
+                    if (res.success && res.driver) {
+                        driver = res.driver;
+                    }
                 }
+                
+                // If still no driver, try to get from session
+                if (!driver) {
+                    const session = localStorage.getItem('borongan_driver_session');
+                    if (session) {
+                        const s = JSON.parse(session);
+                        const res = await fetch("api/drivers.php?id=" + s.driverId).then(r => r.json());
+                        if (res.success && res.driver) {
+                            driver = res.driver;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load driver from API", e);
             }
 
             // If still no driver, show placeholder

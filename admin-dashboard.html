@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="assets/css/confirm-modal.css" />
   <link rel="stylesheet" href="assets/css/admin-dashboard.css" />
 </head>
 <body>
@@ -25,15 +26,15 @@
     </div>
   </div>
   <div class="py-2">
-    <button class="sidebar-item active" data-page="dashboard"> Dashboard</button>
-    <button class="sidebar-item" data-page="drivers"> Driver Management</button>
-    <button class="sidebar-item" data-page="vehicles"> Vehicle Management</button>
-    <button class="sidebar-item" data-page="qr"> QR Code Management</button>
-    <button class="sidebar-item" data-page="payment"> Payment Collection</button>
-    <button class="sidebar-item" data-page="transactions"> Transaction History</button>
-    <button class="sidebar-item" data-page="reports"> Reports</button>
-    <button class="sidebar-item" data-page="settings"> Settings</button>
-    <button class="sidebar-item" onclick="logout()" style="border-top:1px solid #e2e8f0; margin-top:0.5rem; padding-top:1rem;"> Logout</button>
+    <button class="sidebar-item active" data-page="dashboard"><i class="fa-solid fa-chart-pie mr-2"></i> Dashboard</button>
+    <button class="sidebar-item" data-page="drivers"><i class="fa-solid fa-id-card mr-2"></i> Driver Management</button>
+    <button class="sidebar-item" data-page="vehicles"><i class="fa-solid fa-car mr-2"></i> Vehicle Management</button>
+    <button class="sidebar-item" data-page="qr"><i class="fa-solid fa-qrcode mr-2"></i> QR Code Management</button>
+    <button class="sidebar-item" data-page="payment"><i class="fa-solid fa-hand-holding-dollar mr-2"></i> Payment Collection</button>
+    <button class="sidebar-item" data-page="transactions"><i class="fa-solid fa-receipt mr-2"></i> Transaction History</button>
+    <button class="sidebar-item" data-page="reports"><i class="fa-solid fa-chart-column mr-2"></i> Reports</button>
+    <button class="sidebar-item" data-page="settings"><i class="fa-solid fa-sliders mr-2"></i> Settings</button>
+    <button class="sidebar-item text-red-600 hover:text-red-700" onclick="logout()" style="border-top:1px solid #e2e8f0; margin-top:0.5rem; padding-top:1rem;"><i class="fa-solid fa-right-from-bracket mr-2"></i> Logout</button>
   </div>
 </nav>
 
@@ -313,8 +314,6 @@
   </div><div class="flex gap-3 mt-4"><button type="submit" class="btn-primary flex-1" id="driverSubmitBtn"><i class="fas fa-save"></i> <span id="driverSubmitText">Save</span></button><button type="button" class="btn-outline flex-1" onclick="closeModal('driverModal')">Cancel</button></div></form></div></div>
 
 <div class="modal-overlay" id="vehicleModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-4" id="vehicleModalTitle">Add Vehicle</h2><form id="vehicleForm"><input type="hidden" id="editVehiclePlate"><div class="space-y-3"><input type="text" id="vPlateNumber" class="input-field" placeholder="Plate Number" required><select id="vVehicleType" class="input-field" required><option value="">Type</option><option value="Tricycle">Tricycle</option><option value="Jeepney">Jeepney</option><option value="Multicab">Multicab</option><option value="Bus">Bus</option></select><select id="vDriver" class="input-field"><option value="">Unassigned</option></select><select id="vStatus" class="input-field"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div><div class="flex gap-3 mt-4"><button type="submit" class="btn-primary flex-1" id="vehicleSubmitBtn"><i class="fas fa-save"></i> <span id="vehicleSubmitText">Save</span></button><button type="button" class="btn-outline flex-1" onclick="closeModal('vehicleModal')">Cancel</button></div></form></div></div>
-
-<div class="modal-overlay" id="confirmModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-2" id="confirmTitle">Confirm</h2><p class="text-gray-600 mb-4" id="confirmMessage">This action cannot be undone.</p><div class="flex gap-3"><button class="btn-primary flex-1" id="confirmYesBtn" style="background:var(--red);"><i class="fas fa-trash"></i> Delete</button><button class="btn-outline flex-1" onclick="closeModal('confirmModal')">Cancel</button></div></div></div>
 
 <script src="assets/js/admin-dashboard.js"></script>
 </body>

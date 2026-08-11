@@ -1,18 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Borongan Transport · Driver Dashboard</title>
-    <script src="https://cdn.tailwindcss.com">
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
-    </script>
-    
-  <link rel="stylesheet" href="assets/css/driver-dashboard.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="assets/css/confirm-modal.css" />
+    <link rel="stylesheet" href="assets/css/driver-dashboard.css" />
 </head>
 <body>
 
@@ -57,19 +54,19 @@
         <div class="sidebar-nav">
             <div class="nav-items">
                 <button class="sidebar-item active" data-page="dashboard">
-                     Dashboard
+                    <i class="fas fa-chart-pie"></i> Dashboard
                 </button>
                 <button class="sidebar-item" data-page="qr">
-                     Digital Driver ID
+                    <i class="fas fa-id-card"></i> Digital Driver ID
                 </button>
                 <button class="sidebar-item" data-page="payments">
-                     Payment History
+                    <i class="fas fa-receipt"></i> Payment History
                 </button>
                 <button class="sidebar-item" data-page="profile">
-                     My Profile
+                    <i class="fas fa-user-circle"></i> My Profile
                 </button>
                 <button class="sidebar-item logout-item" onclick="logout()">
-                     Logout
+                    <i class="fas fa-right-from-bracket"></i> Logout
                 </button>
             </div>
         </div>
@@ -440,7 +437,6 @@
         </div>
     </div>
 
-    
-  <script src="assets/js/driver-dashboard.js"></script>
+    <script src="assets/js/driver-dashboard.js"></script>
 </body>
 </html>
