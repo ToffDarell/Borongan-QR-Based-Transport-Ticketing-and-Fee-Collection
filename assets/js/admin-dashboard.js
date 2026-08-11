@@ -237,6 +237,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   setInterval(updateLastUpdated, 60000);
   const adminName = localStorage.getItem("admin_name") || "Admin";
   document.getElementById("adminGreetingName").textContent = adminName;
+  startPaymentPolling();
 });
 
 window.logout = function () {
@@ -255,6 +256,80 @@ window.logout = function () {
 function updateLastUpdated() {
   document.getElementById("lastUpdatedTime").textContent =
     new Date().toLocaleTimeString();
+}
+
+let lastTransactionCount = 0;
+
+function startPaymentPolling() {
+  lastTransactionCount = transactions.length;
+  
+  setInterval(async () => {
+    if (localStorage.getItem("admin_logged_in") !== "true") return;
+    
+    // Check localStorage notification flags first (fast, same-machine testing)
+    const raw = localStorage.getItem("borongan_admin_notifs");
+    if (raw) {
+      try {
+        let notifications = JSON.parse(raw);
+        const unread = notifications.filter(n => !n.read);
+        if (unread.length > 0) {
+          unread.forEach((n) => {
+            showToast(`New Self-Payment: ₱${n.amount} from ${n.driverName}`, "success");
+            sendNotification("Payment Received", `₱${n.amount} from ${n.driverName} (Self-Payment)`);
+            addActivity("Payment Received", `${n.driverName} - ₱${n.amount} (Self-Payment)`);
+            n.read = true;
+          });
+          localStorage.setItem("borongan_admin_notifs", JSON.stringify(notifications));
+          
+          await loadAllDataFromDB();
+          updateDashboard();
+          renderTransactions();
+          updateChartData();
+          
+          const scanInput = document.getElementById("qrScanInput");
+          if (scanInput && scanInput.value.trim()) {
+            scanQR(true);
+          }
+          
+          lastTransactionCount = transactions.length;
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    // Fallback: Check database payment count to catch cross-device payments
+    try {
+      const res = await fetch("api/payments.php").then(r => r.json());
+      if (res.success && res.payments.length > lastTransactionCount) {
+        if (lastTransactionCount > 0) {
+          const newPayments = res.payments.slice(0, res.payments.length - lastTransactionCount);
+          newPayments.forEach(t => {
+            showToast(`New Payment: ₱${t.amount} from ${t.driverName}`, "success");
+            sendNotification("Payment Received", `₱${t.amount} from ${t.driverName}`);
+            addActivity("Payment Received", `${t.driverName} - ₱${t.amount}`);
+          });
+        }
+        transactions = res.payments;
+        updateDashboard();
+        renderTransactions();
+        updateChartData();
+        
+        const scanInput = document.getElementById("qrScanInput");
+        if (scanInput && scanInput.value.trim()) {
+          scanQR(true);
+        }
+        
+        lastTransactionCount = transactions.length;
+      } else if (res.success) {
+        transactions = res.payments;
+        lastTransactionCount = transactions.length;
+      }
+    } catch (e) {
+      // fail silently
+    }
+  }, 4000);
 }
 
 function globalSearch() {
@@ -817,10 +892,10 @@ function deleteQR(id) {
 }
 
 // ===== PAYMENT =====
-function scanQR() {
+function scanQR(silent = false) {
   const input = document.getElementById("qrScanInput").value.trim();
   if (!input) {
-    showToast("Enter search term", "warning");
+    if (!silent) showToast("Enter search term", "warning");
     return;
   }
   const driver = drivers.find(
@@ -832,20 +907,43 @@ function scanQR() {
   const details = document.getElementById("paymentDetails");
   if (!driver) {
     details.innerHTML = `<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-4xl block mb-2"></i>Driver not found</div>`;
-    showToast("Driver not found", "error");
+    if (!silent) showToast("Driver not found", "error");
     return;
   }
   const fee = fees[driver.vehicleType] || 0;
+  const today = new Date().toLocaleDateString('en-CA');
+  const paidToday = transactions.some(
+    (t) => (t.driverId === driver.driverId || t.driverId === driver.driver_id) && t.date === today
+  );
+  const driverId = driver.driver_id || driver.driverId;
+  const photo = driver.photo
+    ? `<img src="${driver.photo}" alt="${driver.fullName}">`
+    : `<span>${driver.fullName.charAt(0).toUpperCase()}</span>`;
+  const actionBtn = paidToday
+    ? `<div class="flex items-center gap-2 justify-center bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 font-semibold">
+        <i class="fas fa-check-circle"></i> Already Paid Today
+       </div>`
+    : `<div class="flex gap-2 mt-4">
+        <button class="btn-primary flex-1" onclick="processPayment('${driverId}', ${fee})">
+          <i class="fas fa-check"></i> Collect
+        </button>
+        <button class="btn-outline flex-1" onclick="clearPayment()">Cancel</button>
+       </div>`;
   details.innerHTML = `
     <div class="space-y-3">
       <div class="flex items-center gap-3 border-b border-gray-100 pb-3">
-        <div class="profile-photo w-12 h-12 text-lg">
-          ${driver.photo ? `<img src="${driver.photo}" alt="${driver.fullName}">` : `<span>${driver.fullName.charAt(0).toUpperCase()}</span>`}
+        <div class="profile-photo w-12 h-12 text-lg">${photo}</div>
+        <div>
+          <div class="font-bold text-gray-800">${driver.fullName}</div>
+          <div class="text-sm text-gray-500">${driver.driverId}</div>
         </div>
-        <div><div class="font-bold text-gray-800">${driver.fullName}</div><div class="text-sm text-gray-500">${driver.driverId}</div></div>
       </div>
-      <div class="grid grid-cols-2 gap-2 text-sm"><div class="text-gray-500">Vehicle</div><div class="font-medium">${driver.vehicleType}</div><div class="text-gray-500">Plate</div><div class="font-medium">${driver.plateNumber}</div><div class="text-gray-500">Fee</div><div class="font-bold text-primary text-lg">₱${fee}</div></div>
-      <div class="flex gap-2 mt-4"><button class="btn-primary flex-1" onclick="processPayment('${driver.driverId}', ${fee})"><i class="fas fa-check"></i> Collect</button><button class="btn-outline flex-1" onclick="clearPayment()">Cancel</button></div>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div class="text-gray-500">Vehicle</div><div class="font-medium">${driver.vehicleType}</div>
+        <div class="text-gray-500">Plate</div><div class="font-medium">${driver.plateNumber}</div>
+        <div class="text-gray-500">Fee</div><div class="font-bold text-primary text-lg">₱${fee}</div>
+      </div>
+      ${actionBtn}
     </div>
   `;
 }
@@ -935,19 +1033,13 @@ function printReceipt(trans) {
       <div class="row"><span class="label">Date</span><span class="value">${trans.date}</span></div>
       <div class="row"><span class="label">Time</span><span class="value">${trans.time}</span></div>
       <div class="footer">Thank you!</div>
+      <div class="no-print" style="text-align:center;margin-top:16px;display:flex;gap:8px;justify-content:center;">
+      <button onclick="window.print()" style="background:#b22234;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:0.9rem;"><i class="fas fa-print"></i> Print</button>
+      <button onclick="window.close()" style="background:#6b7280;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:0.9rem;">Close</button>
     </div>
+    <style>.no-print { display:flex; } @media print { .no-print { display:none !important; } }</style>
     <script>
-      function doPrint() {
-        if (window.hasPrinted) return;
-        window.hasPrinted = true;
-        setTimeout(() => {
-          window.print();
-          setTimeout(() => { window.close(); }, 500);
-        }, 500);
-      }
-      window.onload = doPrint;
-      document.addEventListener('DOMContentLoaded', doPrint);
-      setTimeout(doPrint, 800);
+      window.onload = function() { window.print(); };
     <\/script>
   `);
   printWindow.document.close();

@@ -116,6 +116,10 @@ const ConfirmModal = {
         }
 
         function getDriverFromAdminData(username) {
+            const current = localStorage.getItem('current_driver');
+            if (current) {
+                try { return JSON.parse(current); } catch {}
+            }
             const raw = localStorage.getItem('borongan_drivers');
             if (!raw) return null;
             try { return JSON.parse(raw).find(d => d.username === username) || null; } catch { return null; }
@@ -456,30 +460,62 @@ const ConfirmModal = {
 
         function payNow() {
             const fee = getFee(currentDriver.vehicleType);
-            const now = new Date();
-            const trans = {
-                id: 'TR-' + String(Date.now()).slice(-6),
-                driverId: currentDriver.driverId,
-                driverName: currentDriver.fullName,
-                vehicleType: currentDriver.vehicleType,
-                plateNumber: currentDriver.plateNumber,
-                amount: fee,
-                date: now.toISOString().split('T')[0],
-                time: now.toTimeString().slice(0, 5),
-                status: 'Paid',
-                timestamp: now.toISOString()
-            };
-            const raw = localStorage.getItem('borongan_transactions');
-            let allTrans = raw ? JSON.parse(raw) : [];
-            allTrans.push(trans);
-            localStorage.setItem('borongan_transactions', JSON.stringify(allTrans));
-            driverTransactions = getDriverTransactions(currentDriver.driverId);
-            showToast(`Payment of ₱${fee} successful!`, 'success');
-            logDriverActivity(`Paid daily fee of ₱${fee}`, 'fa-credit-card', 'log-payment');
-            populateDashboard();
-            renderPaymentHistory();
-            checkPaymentReminder();
-            renderActivities();
+            fetch("api/payments.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    driverId: currentDriver.driverId,
+                    amount: fee,
+                    driverName: currentDriver.fullName
+                })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    const now = new Date();
+                    const trans = {
+                        id: res.receiptNo,
+                        driverId: currentDriver.driverId,
+                        driverName: currentDriver.fullName,
+                        vehicleType: currentDriver.vehicleType,
+                        plateNumber: currentDriver.plateNumber,
+                        amount: fee,
+                        date: now.toISOString().split('T')[0],
+                        time: now.toTimeString().slice(0, 5),
+                        status: 'Paid',
+                        timestamp: now.toISOString()
+                    };
+                    const raw = localStorage.getItem('borongan_transactions');
+                    let allTrans = raw ? JSON.parse(raw) : [];
+                    allTrans.push(trans);
+                    localStorage.setItem('borongan_transactions', JSON.stringify(allTrans));
+
+                    // Write a notification flag for the admin dashboard to pick up
+                    const notif = {
+                        driverName: currentDriver.fullName,
+                        amount: fee,
+                        receiptId: trans.id,
+                        timestamp: now.toISOString(),
+                        read: false
+                    };
+                    const existingNotifs = JSON.parse(localStorage.getItem('borongan_admin_notifs') || '[]');
+                    existingNotifs.push(notif);
+                    localStorage.setItem('borongan_admin_notifs', JSON.stringify(existingNotifs));
+
+                    driverTransactions = getDriverTransactions(currentDriver.driverId);
+                    showToast(`Payment of ₱${fee} successful!`, 'success');
+                    logDriverActivity(`Paid daily fee of ₱${fee}`, 'fa-credit-card', 'log-payment');
+                    populateDashboard();
+                    renderPaymentHistory();
+                    checkPaymentReminder();
+                    renderActivities();
+                } else {
+                    showToast(res.error || 'Payment failed', 'error');
+                }
+            })
+            .catch(() => {
+                showToast('Server connection error', 'error');
+            });
         }
 
         function populateProfile() {
