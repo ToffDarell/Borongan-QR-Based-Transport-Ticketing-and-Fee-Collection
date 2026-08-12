@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="stylesheet" href="assets/css/confirm-modal.css" />
-    <link rel="stylesheet" href="assets/css/driver-dashboard.css" />
+    <link rel="stylesheet" href="assets/css/confirm-modal.css?v=20260812" />
+    <link rel="stylesheet" href="assets/css/driver-dashboard.css?v=20260812-center-all" />
 </head>
 <body>
 
@@ -132,7 +132,7 @@
             <!-- Two-column: QR + Activities -->
             <div class="grid lg:grid-cols-2 gap-5 mb-5">
                 <div class="table-card flex flex-col items-center">
-                    <h3 class="font-bold text-gray-800 mb-3 text-sm"> My QR Code</h3>
+                    <h3 class="font-bold text-gray-800 mb-3 text-sm"> Present This QR Code at the Terminal</h3>
                     <div class="qr-compact-card">
                         <div class="qr-row">
                             <div class="qr-box">
@@ -245,7 +245,7 @@
                             </div>
 
                             <div class="id-info-grid">
-                                <div class="id-info-item full-width">
+                                <div class="id-info-item full-width name-field">
                                     <span class="info-label"> Full Name</span>
                                     <span id="displayName" class="info-value highlight">--</span>
                                 </div>
@@ -393,6 +393,34 @@
 
     </div>
 
+    <!-- ===== CHANGE PASSWORD MODAL ===== -->
+    <div class="modal-overlay" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
+        <div class="modal-box password-modal-box">
+            <div class="password-modal-header">
+                <div>
+                    <h2 id="passwordModalTitle">Change Password</h2>
+                    <p class="password-modal-help">Use at least 4 characters and keep your password private.</p>
+                </div>
+                <button type="button" class="password-modal-close" onclick="closeModal('passwordModal')" aria-label="Close password dialog">&times;</button>
+            </div>
+            <form id="passwordForm" class="password-form">
+                <div>
+                    <label for="newPassword">New password</label>
+                    <input type="password" id="newPassword" class="input-field" minlength="4" autocomplete="new-password" required>
+                </div>
+                <div>
+                    <label for="confirmPassword">Confirm new password</label>
+                    <input type="password" id="confirmPassword" class="input-field" minlength="4" autocomplete="new-password" required>
+                </div>
+                <p id="passwordError" class="password-error" role="alert" hidden></p>
+                <div class="flex gap-3 password-modal-actions">
+                    <button type="submit" class="btn-primary flex-1"><i class="fas fa-key"></i> Change Password</button>
+                    <button type="button" class="btn-outline flex-1" onclick="closeModal('passwordModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ===== EDIT PROFILE MODAL ===== -->
     <div class="modal-overlay" id="editProfileModal">
         <div class="modal-box">
@@ -437,6 +465,6 @@
         </div>
     </div>
 
-    <script src="assets/js/driver-dashboard.js"></script>
+    <script src="assets/js/driver-dashboard.js?v=20260812"></script>
 </body>
 </html>

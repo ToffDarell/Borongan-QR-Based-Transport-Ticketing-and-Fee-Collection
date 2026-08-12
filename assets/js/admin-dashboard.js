@@ -56,6 +56,30 @@ let fees = { Tricycle: 5, Jeepney: 60, Multicab: 60, Bus: 100 };
 let activities = [];
 let chartInstance = null;
 let qrUsage = {};
+let adminNotifications = [];
+const adminNotificationsKey = "borongan_admin_notifications";
+
+function normalizeVehicle(vehicle) {
+  return {
+    ...vehicle,
+    vehicleId: vehicle.vehicleId ?? vehicle.vehicle_id ?? null,
+    plateNumber: vehicle.plateNumber ?? vehicle.plate_number ?? "",
+    vehicleType: vehicle.vehicleType ?? vehicle.vehicle_type ?? "",
+    driverId: vehicle.driverId ?? vehicle.driver_id ?? null,
+  };
+}
+
+function normalizeTransaction(transaction) {
+  return {
+    ...transaction,
+    vehicleId: transaction.vehicleId ?? transaction.vehicle_id ?? null,
+    vehicleType: transaction.vehicleType ?? transaction.vehicle_type ?? "Not recorded",
+    plateNumber: transaction.plateNumber ?? transaction.plate_number ?? "Not recorded",
+    driverId: transaction.driverId ?? transaction.driver_id ?? "",
+    driverName: transaction.driverName ?? transaction.driver_name ?? "Unknown driver",
+    amount: Number(transaction.amount || 0),
+  };
+}
 
 // Load all data from API on start
 async function loadAllDataFromDB() {
@@ -66,9 +90,118 @@ async function loadAllDataFromDB() {
     fetch("api/fees.php").then((r) => r.json()),
   ]);
   if (driversRes.success) drivers = driversRes.drivers;
-  if (vehiclesRes.success) vehicles = vehiclesRes.vehicles;
-  if (paymentsRes.success) transactions = paymentsRes.payments;
+  if (vehiclesRes.success) vehicles = vehiclesRes.vehicles.map(normalizeVehicle);
+  if (paymentsRes.success) transactions = paymentsRes.payments.map(normalizeTransaction);
   if (feesRes.success) fees = feesRes.fees;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  }[character]));
+}
+
+function formatNotificationTime(timestamp) {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "Just now";
+  return date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function renderNotifications() {
+  const list = document.getElementById("notificationList");
+  const badge = document.getElementById("notificationBadge");
+  if (!list || !badge) return;
+
+  const unreadCount = adminNotifications.filter((notification) => !notification.read).length;
+  badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+  badge.hidden = unreadCount === 0;
+
+  if (!adminNotifications.length) {
+    list.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+    return;
+  }
+
+  list.innerHTML = adminNotifications.slice(0, 30).map((notification) => `
+    <button type="button" class="notification-item ${notification.read ? "" : "is-unread"}" data-notification-id="${escapeHtml(notification.id)}" role="listitem">
+      <span class="notification-item__icon"><i class="fas fa-bell" aria-hidden="true"></i></span>
+      <span>
+        <span class="notification-item__title">${escapeHtml(notification.title)}</span>
+        <span class="notification-item__message">${escapeHtml(notification.message)}</span>
+        <span class="notification-item__time">${formatNotificationTime(notification.timestamp)}</span>
+      </span>
+    </button>
+  `).join("");
+}
+
+function saveAdminNotifications() {
+  localStorage.setItem(adminNotificationsKey, JSON.stringify(adminNotifications));
+}
+
+function addAdminNotification(title, message) {
+  const recentDuplicate = adminNotifications.find((notification) =>
+    notification.title === title &&
+    notification.message === message &&
+    Date.now() - new Date(notification.timestamp).getTime() < 5000
+  );
+  if (recentDuplicate) return;
+
+  adminNotifications.unshift({
+    id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    title,
+    message,
+    timestamp: new Date().toISOString(),
+    read: false,
+  });
+  adminNotifications = adminNotifications.slice(0, 50);
+  saveAdminNotifications();
+  renderNotifications();
+}
+
+function initNotifications() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(adminNotificationsKey) || "[]");
+    if (Array.isArray(stored)) adminNotifications = stored;
+  } catch {
+    adminNotifications = [];
+  }
+
+  const bell = document.getElementById("notificationBell");
+  const panel = document.getElementById("notificationPanel");
+  const list = document.getElementById("notificationList");
+  const markRead = document.getElementById("markNotificationsRead");
+  const wrapper = document.getElementById("adminNotification");
+  if (!bell || !panel || !list || !markRead || !wrapper) return;
+
+  bell.addEventListener("click", () => {
+    const isOpen = !panel.hidden;
+    panel.hidden = isOpen;
+    bell.setAttribute("aria-expanded", String(!isOpen));
+  });
+  markRead.addEventListener("click", () => {
+    adminNotifications = adminNotifications.map((notification) => ({ ...notification, read: true }));
+    saveAdminNotifications();
+    renderNotifications();
+  });
+  list.addEventListener("click", (event) => {
+    const item = event.target.closest("[data-notification-id]");
+    if (!item) return;
+    adminNotifications = adminNotifications.map((notification) =>
+      notification.id === item.dataset.notificationId ? { ...notification, read: true } : notification
+    );
+    saveAdminNotifications();
+    renderNotifications();
+  });
+  document.addEventListener("click", (event) => {
+    if (!wrapper.contains(event.target)) {
+      panel.hidden = true;
+      bell.setAttribute("aria-expanded", "false");
+    }
+  });
+  renderNotifications();
 }
 
 function showToast(msg, type = "success") {
@@ -78,8 +211,14 @@ function showToast(msg, type = "success") {
     error: "fa-exclamation-circle",
     warning: "fa-triangle-exclamation",
   };
+  const duplicateToast = [...c.children].some((toast) =>
+    toast.dataset.toastMessage === msg && !toast.classList.contains("hiding")
+  );
+  if (duplicateToast) return;
+
   const t = document.createElement("div");
   t.className = `toast ${type}`;
+  t.dataset.toastMessage = msg;
   t.innerHTML = `<span class="toast-icon"><i class="fas ${icons[type] || icons.success}"></i></span><span class="toast-msg">${msg}</span><button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`;
   c.appendChild(t);
   setTimeout(() => {
@@ -116,6 +255,7 @@ function playNotificationSound() {
 }
 
 function sendNotification(title, message) {
+  addAdminNotification(title, message);
   playNotificationSound();
   if ("Notification" in window && Notification.permission === "granted") {
     new Notification(title, {
@@ -221,6 +361,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       document.getElementById("sidebar").classList.toggle("open");
     });
   initSidebar();
+  initNotifications();
   updateLastUpdated();
   
   await loadAllDataFromDB();
@@ -259,6 +400,9 @@ function updateLastUpdated() {
 }
 
 let lastTransactionCount = 0;
+// Client-side guard against accidental double-clicks. The API remains the
+// source of truth and creates the receipt/timestamp for the terminal entry.
+let paymentInProgress = false;
 
 function startPaymentPolling() {
   lastTransactionCount = transactions.length;
@@ -266,52 +410,22 @@ function startPaymentPolling() {
   setInterval(async () => {
     if (localStorage.getItem("admin_logged_in") !== "true") return;
     
-    // Check localStorage notification flags first (fast, same-machine testing)
-    const raw = localStorage.getItem("borongan_admin_notifs");
-    if (raw) {
-      try {
-        let notifications = JSON.parse(raw);
-        const unread = notifications.filter(n => !n.read);
-        if (unread.length > 0) {
-          unread.forEach((n) => {
-            showToast(`New Self-Payment: ₱${n.amount} from ${n.driverName}`, "success");
-            sendNotification("Payment Received", `₱${n.amount} from ${n.driverName} (Self-Payment)`);
-            addActivity("Payment Received", `${n.driverName} - ₱${n.amount} (Self-Payment)`);
-            n.read = true;
-          });
-          localStorage.setItem("borongan_admin_notifs", JSON.stringify(notifications));
-          
-          await loadAllDataFromDB();
-          updateDashboard();
-          renderTransactions();
-          updateChartData();
-          
-          const scanInput = document.getElementById("qrScanInput");
-          if (scanInput && scanInput.value.trim()) {
-            scanQR(true);
-          }
-          
-          lastTransactionCount = transactions.length;
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    
-    // Fallback: Check database payment count to catch cross-device payments
+    // The database is the source of truth. Do not also poll the old
+    // localStorage notification queue, which caused duplicate payment toasts.
     try {
       const res = await fetch("api/payments.php").then(r => r.json());
       if (res.success && res.payments.length > lastTransactionCount) {
         if (lastTransactionCount > 0) {
-          const newPayments = res.payments.slice(0, res.payments.length - lastTransactionCount);
+          const newPayments = res.payments
+            .slice(0, res.payments.length - lastTransactionCount)
+            .map(normalizeTransaction);
           newPayments.forEach(t => {
             showToast(`New Payment: ₱${t.amount} from ${t.driverName}`, "success");
             sendNotification("Payment Received", `₱${t.amount} from ${t.driverName}`);
             addActivity("Payment Received", `${t.driverName} - ₱${t.amount}`);
           });
         }
-        transactions = res.payments;
+        transactions = res.payments.map(normalizeTransaction);
         updateDashboard();
         renderTransactions();
         updateChartData();
@@ -323,7 +437,7 @@ function startPaymentPolling() {
         
         lastTransactionCount = transactions.length;
       } else if (res.success) {
-        transactions = res.payments;
+        transactions = res.payments.map(normalizeTransaction);
         lastTransactionCount = transactions.length;
       }
     } catch (e) {
@@ -911,24 +1025,16 @@ function scanQR(silent = false) {
     return;
   }
   const fee = fees[driver.vehicleType] || 0;
-  const today = new Date().toLocaleDateString('en-CA');
-  const paidToday = transactions.some(
-    (t) => (t.driverId === driver.driverId || t.driverId === driver.driver_id) && t.date === today
-  );
   const driverId = driver.driver_id || driver.driverId;
   const photo = driver.photo
     ? `<img src="${driver.photo}" alt="${driver.fullName}">`
     : `<span>${driver.fullName.charAt(0).toUpperCase()}</span>`;
-  const actionBtn = paidToday
-    ? `<div class="flex items-center gap-2 justify-center bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 font-semibold">
-        <i class="fas fa-check-circle"></i> Already Paid Today
-       </div>`
-    : `<div class="flex gap-2 mt-4">
-        <button class="btn-primary flex-1" onclick="processPayment('${driverId}', ${fee})">
-          <i class="fas fa-check"></i> Collect
-        </button>
-        <button class="btn-outline flex-1" onclick="clearPayment()">Cancel</button>
-       </div>`;
+  const actionBtn = `<div class="flex gap-2 mt-4">
+      <button class="btn-primary flex-1" onclick="processPayment('${driverId}')">
+        <i class="fas fa-check"></i> Collect Terminal Fee
+      </button>
+      <button class="btn-outline flex-1" onclick="clearPayment()">Cancel</button>
+     </div>`;
   details.innerHTML = `
     <div class="space-y-3">
       <div class="flex items-center gap-3 border-b border-gray-100 pb-3">
@@ -953,17 +1059,21 @@ function clearPayment() {
     '<div class="text-center py-8 text-gray-400"><i class="fas fa-credit-card text-4xl block mb-2"></i>Search for a driver</div>';
 }
 
-function processPayment(driverId, amount) {
-  const driver = drivers.find((d) => d.driverId === driverId);
+function processPayment(driverId) {
+  // This function is called only after the operator confirms a new terminal
+  // entry. Searching the driver only displays details and does not collect.
+  if (paymentInProgress) return;
+  const driver = drivers.find((d) => d.driverId === driverId || d.driver_id === driverId);
   if (!driver) return;
-  const vehicle = vehicles.find(v => v.plate_number === driver.plate_number || v.plateNumber === driver.plateNumber);
+  // Disable repeated clicks until the current collection has completed.
+  paymentInProgress = true;
+  const vehicle = vehicles.find(v => v.plateNumber === driver.plateNumber || v.plate_number === driver.plateNumber);
   fetch("api/payments.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       driverId: driver.driver_id || driver.driverId,
-      vehicleId: vehicle ? vehicle.vehicle_id : null,
-      amount: amount,
+      vehicleId: vehicle ? (vehicle.vehicleId || vehicle.vehicle_id) : null,
       driverName: driver.full_name || driver.fullName,
     }),
   })
@@ -971,24 +1081,44 @@ function processPayment(driverId, amount) {
   .then(async res => {
     if (res.success) {
       const receiptNo = res.receiptNo;
-      const now = new Date();
-      const trans = {
-        id: receiptNo, driverId, driverName: driver.full_name || driver.fullName,
+      const payment = normalizeTransaction(res.payment || {
+        id: receiptNo,
+        driverId,
+        driverName: driver.full_name || driver.fullName,
         vehicleType: driver.vehicle_type || driver.vehicleType,
         plateNumber: driver.plate_number || driver.plateNumber,
-        amount, date: now.toISOString().split("T")[0], time: now.toTimeString().slice(0,5),
-      };
+        amount: fees[driver.vehicle_type || driver.vehicleType] || 0,
+        date: new Date().toISOString().split("T")[0],
+        time: new Date().toTimeString().slice(0, 8),
+        status: "Paid",
+      });
+      const trans = payment;
       // Store last transaction so the Print button can access it
       window._lastReceipt = trans;
       document.getElementById("paymentDetails").innerHTML = `
-        <div class="text-center py-6">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+        <div class="payment-success">
+          <div class="payment-success__intro">
+            <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+            </div>
+            <div class="font-bold text-lg text-green-700">Payment Received</div>
+            <div class="text-sm text-gray-500">The terminal fee was recorded successfully.</div>
           </div>
-          <div class="font-bold text-lg text-green-700 mb-1">Payment Received!</div>
-          <div class="text-sm text-gray-600">₱${amount} from <strong>${driver.full_name || driver.fullName}</strong></div>
-          <div class="text-xs text-gray-400 mt-1 mb-4">Receipt: ${receiptNo} &nbsp;|&nbsp; ${trans.date} ${trans.time}</div>
-          <div class="flex gap-2 justify-center mt-3">
+          <div class="receipt-preview" aria-label="Receipt preview">
+            <div class="receipt-preview__header">BORONGAN TRANSPORT<br><span class="receipt-preview__subtitle">TERMINAL FEE RECEIPT</span></div>
+            <div class="receipt-preview__status">PAID</div>
+            <div class="receipt-preview__details">
+              <div class="receipt-preview__row"><span>Receipt</span><span>${trans.id}</span></div>
+              <div class="receipt-preview__row"><span>Driver</span><span>${trans.driverName}</span></div>
+              <div class="receipt-preview__row"><span>Vehicle</span><span>${trans.vehicleType}</span></div>
+              <div class="receipt-preview__row"><span>Plate</span><span>${trans.plateNumber}</span></div>
+              <div class="receipt-preview__row"><span>Date</span><span>${trans.date}</span></div>
+              <div class="receipt-preview__row"><span>Time</span><span>${trans.time}</span></div>
+              <div class="receipt-preview__row receipt-preview__total"><span>Amount</span><span>₱${Number(trans.amount).toFixed(2)}</span></div>
+            </div>
+            <div class="receipt-preview__footer">Keep this receipt for your records.</div>
+          </div>
+          <div class="payment-success__actions">
             <button class="btn-primary" onclick="printReceipt(window._lastReceipt)">
               <i class="fas fa-print mr-1"></i> Print Receipt
             </button>
@@ -997,19 +1127,33 @@ function processPayment(driverId, amount) {
             </button>
           </div>
         </div>`;
-      showToast(`₱${amount} collected`, "success");
-      sendNotification("Payment Collected", `₱${amount} received from ${driver.full_name || driver.fullName}`);
-      addActivity("Payment Received", `${driver.full_name || driver.fullName} - ₱${amount}`);
+      showToast(`₱${Number(trans.amount).toFixed(2)} collected`, "success");
+      sendNotification("Payment Collected", `₱${Number(trans.amount).toFixed(2)} received from ${trans.driverName}`);
+      addActivity("Payment Received", `${trans.driverName} - ₱${Number(trans.amount).toFixed(2)}`);
+      // Reserve the new row immediately so the polling loop does not show a
+      // second notification while this operator action is still finishing.
+      lastTransactionCount = Math.max(lastTransactionCount, transactions.length + 1);
       await loadAllDataFromDB();
+      lastTransactionCount = transactions.length;
       updateDashboard(); renderTransactions(); updateChartData();
     } else { showToast(res.error || "Payment failed", "error"); }
   })
-  .catch(() => showToast("Server error", "error"));
+  .catch(() => showToast("Server error", "error"))
+  .finally(() => {
+    // Re-enable collection so the next legitimate terminal entry can be
+    // recorded. Any supervisor exception should use a separate permission-
+    // checked flow instead of bypassing this guard in the browser.
+    paymentInProgress = false;
+  });
 }
 
 function printReceipt(trans) {
-  const driver = drivers.find((d) => d.driverId === trans.driverId);
+  const driver = drivers.find((d) => d.driverId === trans.driverId || d.driver_id === trans.driverId);
   const printWindow = window.open("", "_blank", "width=400,height=600");
+  if (!printWindow) {
+    showToast("Please allow pop-ups to print the receipt.", "warning");
+    return;
+  }
   printWindow.document.write(`
     <html><head><title>Receipt</title><style>
       body { font-family: 'Courier New', monospace; padding: 30px 20px; max-width: 350px; margin: 0 auto; background: white; }
@@ -1020,7 +1164,7 @@ function printReceipt(trans) {
       .label { color: #555; }
       .value { font-weight: bold; }
       .footer { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px; text-align: center; font-size: 0.8rem; color: #777; }
-    </style>  <link rel="stylesheet" href="assets/css/admin-dashboard.css" />
+    </style>
 </head><body>
     <div class="receipt">
       <div class="header">BORONGAN TRANSPORT</div>
@@ -1038,15 +1182,17 @@ function printReceipt(trans) {
       <button onclick="window.close()" style="background:#6b7280;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:0.9rem;">Close</button>
     </div>
     <style>.no-print { display:flex; } @media print { .no-print { display:none !important; } }</style>
-    <script>
-      window.onload = function() { window.print(); };
-    <\/script>
   `);
   printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 250);
 }
 
 document.getElementById("qrScanInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") scanQR();
+  if (e.key === "Enter") {
+    e.preventDefault();
+    scanQR();
+  }
 });
 
 // ===== TRANSACTIONS =====

@@ -80,6 +80,18 @@ if ($method === 'POST') {
             $b['vehicleType'] ?? '', $b['plateNumber'] ?? '', $b['licenseNo'] ?? '',
             $b['photo'] ?? '', $b['licenseExpiration'] ?? null, $id
         ]);
+
+        // Keep the vehicle table in sync with the driver's registered vehicle.
+        if (!empty($b['plateNumber']) && !empty($b['vehicleType'])) {
+            $pdo->prepare("
+                INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status)
+                VALUES (?, ?, ?, 'Active')
+                ON DUPLICATE KEY UPDATE
+                    vehicle_type = VALUES(vehicle_type),
+                    driver_id = VALUES(driver_id),
+                    status = 'Active'
+            ")->execute([$b['plateNumber'], $b['vehicleType'], $id]);
+        }
         
         // Update user account details if user exists
         $driverStmt = $pdo->prepare("SELECT user_id FROM drivers WHERE driver_id = ?");
@@ -118,6 +130,19 @@ if ($method === 'POST') {
             $b['vehicleType'], $b['plateNumber'] ?? '', $b['licenseNo'] ?? '',
             $b['photo'] ?? '', $b['licenseExpiration'] ?? null
         ]);
+
+        // New registrations must have a relational vehicle record so payment
+        // history can always display vehicle and plate information.
+        if (!empty($b['plateNumber']) && !empty($b['vehicleType'])) {
+            $pdo->prepare("
+                INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status)
+                VALUES (?, ?, ?, 'Active')
+                ON DUPLICATE KEY UPDATE
+                    vehicle_type = VALUES(vehicle_type),
+                    driver_id = VALUES(driver_id),
+                    status = 'Active'
+            ")->execute([$b['plateNumber'], $b['vehicleType'], $driverId]);
+        }
 
         // Auto-create QR code
         $qrData = json_encode(['driverId' => $driverId, 'plate' => $b['plateNumber'] ?? '', 'type' => $b['vehicleType']]);

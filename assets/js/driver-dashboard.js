@@ -160,7 +160,7 @@ const ConfirmModal = {
             } catch { window.location.href = 'login.html'; return false; }
         }
 
-        function initDriverDashboard() {
+        async function initDriverDashboard() {
             if (!checkAuth()) return;
             const session = JSON.parse(localStorage.getItem('borongan_driver_session'));
             const username = session.username;
@@ -171,7 +171,7 @@ const ConfirmModal = {
                     window.location.href = 'login.html'; }, 2000);
                 return;
             }
-            driverTransactions = getDriverTransactions(currentDriver.driverId);
+            await loadDriverTransactions();
 
             logDriverActivity('Logged in to dashboard', 'fa-sign-in-alt', 'log-login');
 
@@ -433,6 +433,28 @@ const ConfirmModal = {
             }
         }
 
+        async function loadDriverTransactions() {
+            try {
+                const res = await fetch('api/payments.php?driverId=' + encodeURIComponent(currentDriver.driverId));
+                const data = await res.json();
+                if (data.success) {
+                    driverTransactions = data.payments.map(t => ({
+                        ...t,
+                        amount: Number(t.amount || 0),
+                        status: t.status || 'Paid',
+                        vehicleType: t.vehicleType || currentDriver.vehicleType,
+                        plateNumber: t.plateNumber || currentDriver.plateNumber
+                    }));
+                    return;
+                }
+            } catch (error) {
+                console.error('Unable to load payment history', error);
+            }
+
+            // Keep old local demo records visible if the API is unavailable.
+            driverTransactions = getDriverTransactions(currentDriver.driverId);
+        }
+
         function checkPaymentReminder() {
             const today = new Date().toISOString().split('T')[0];
             const todayTrans = driverTransactions.filter(t => t.date === today);
@@ -440,11 +462,10 @@ const ConfirmModal = {
             if (todayTrans.length === 0) {
                 el.innerHTML = `
               <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
-                <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                <i class="fas fa-info-circle text-yellow-600 text-xl"></i>
                 <div>
-                  <div class="font-semibold text-yellow-800">Payment Due Today</div>
-                  <div class="text-sm text-yellow-700">Fee of ₱${getFee(currentDriver.vehicleType)} not yet paid.</div>
-                  <button class="btn-primary btn-sm mt-1" onclick="payNow()"> Pay Now</button>
+                  <div class="font-semibold text-yellow-800">No terminal collection recorded today</div>
+                  <div class="text-sm text-yellow-700">Present your QR code to the terminal officer when you arrive. The officer will scan your QR code and collect the configured fee.</div>
                 </div>
               </div>
             `;
@@ -452,70 +473,10 @@ const ConfirmModal = {
                 el.innerHTML = `
               <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
                 <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                <div><div class="font-semibold text-green-800">Payment Completed</div><div class="text-sm text-green-700">Today's fee paid. Receipt: ${todayTrans[0].id}</div></div>
+                <div><div class="font-semibold text-green-800">Terminal collection recorded</div><div class="text-sm text-green-700">${todayTrans.length} collection${todayTrans.length === 1 ? '' : 's'} recorded today. Latest receipt: ${todayTrans[0].id}</div></div>
               </div>
             `;
             }
-        }
-
-        function payNow() {
-            const fee = getFee(currentDriver.vehicleType);
-            fetch("api/payments.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    driverId: currentDriver.driverId,
-                    amount: fee,
-                    driverName: currentDriver.fullName
-                })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    const now = new Date();
-                    const trans = {
-                        id: res.receiptNo,
-                        driverId: currentDriver.driverId,
-                        driverName: currentDriver.fullName,
-                        vehicleType: currentDriver.vehicleType,
-                        plateNumber: currentDriver.plateNumber,
-                        amount: fee,
-                        date: now.toISOString().split('T')[0],
-                        time: now.toTimeString().slice(0, 5),
-                        status: 'Paid',
-                        timestamp: now.toISOString()
-                    };
-                    const raw = localStorage.getItem('borongan_transactions');
-                    let allTrans = raw ? JSON.parse(raw) : [];
-                    allTrans.push(trans);
-                    localStorage.setItem('borongan_transactions', JSON.stringify(allTrans));
-
-                    // Write a notification flag for the admin dashboard to pick up
-                    const notif = {
-                        driverName: currentDriver.fullName,
-                        amount: fee,
-                        receiptId: trans.id,
-                        timestamp: now.toISOString(),
-                        read: false
-                    };
-                    const existingNotifs = JSON.parse(localStorage.getItem('borongan_admin_notifs') || '[]');
-                    existingNotifs.push(notif);
-                    localStorage.setItem('borongan_admin_notifs', JSON.stringify(existingNotifs));
-
-                    driverTransactions = getDriverTransactions(currentDriver.driverId);
-                    showToast(`Payment of ₱${fee} successful!`, 'success');
-                    logDriverActivity(`Paid daily fee of ₱${fee}`, 'fa-credit-card', 'log-payment');
-                    populateDashboard();
-                    renderPaymentHistory();
-                    checkPaymentReminder();
-                    renderActivities();
-                } else {
-                    showToast(res.error || 'Payment failed', 'error');
-                }
-            })
-            .catch(() => {
-                showToast('Server connection error', 'error');
-            });
         }
 
         function populateProfile() {
@@ -672,20 +633,51 @@ const ConfirmModal = {
         }
 
         function showChangePassword() {
-            const newPass = prompt('Enter new password:');
-            if (newPass && newPass.length >= 4) {
-                const drivers = JSON.parse(localStorage.getItem('borongan_drivers') || '[]');
-                const idx = drivers.findIndex(d => d.driverId === currentDriver.driverId);
-                if (idx !== -1) {
-                    drivers[idx].password = newPass;
-                    localStorage.setItem('borongan_drivers', JSON.stringify(drivers));
-                    showToast('Password changed successfully!', 'success');
-                    logDriverActivity('Changed password', 'fa-key', 'log-profile');
-                }
-            } else if (newPass !== null) {
-                showToast('Password must be at least 4 characters.', 'warning');
-            }
+            const form = document.getElementById('passwordForm');
+            const error = document.getElementById('passwordError');
+            form.reset();
+            error.textContent = '';
+            error.hidden = true;
+            openModal('passwordModal');
+            requestAnimationFrame(() => document.getElementById('newPassword').focus());
         }
+
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const error = document.getElementById('passwordError');
+
+            const showPasswordError = (message) => {
+                error.textContent = message;
+                error.hidden = false;
+            };
+
+            if (newPass.length < 4) {
+                showPasswordError('Password must be at least 4 characters.');
+                document.getElementById('newPassword').focus();
+                return;
+            }
+            if (newPass !== confirmPass) {
+                showPasswordError('The passwords do not match.');
+                document.getElementById('confirmPassword').focus();
+                return;
+            }
+
+            const drivers = JSON.parse(localStorage.getItem('borongan_drivers') || '[]');
+            const idx = drivers.findIndex(d => d.driverId === currentDriver.driverId);
+            if (idx === -1) {
+                closeModal('passwordModal');
+                showToast('Unable to update password.', 'error');
+                return;
+            }
+
+            drivers[idx].password = newPass;
+            localStorage.setItem('borongan_drivers', JSON.stringify(drivers));
+            closeModal('passwordModal');
+            showToast('Password changed successfully!', 'success');
+            logDriverActivity('Changed password', 'fa-key', 'log-profile');
+        });
 
         document.getElementById('editPhoto').addEventListener('change', function(e) {
             const preview = document.getElementById('photoPreview');

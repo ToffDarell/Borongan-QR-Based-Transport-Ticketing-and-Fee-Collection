@@ -7,6 +7,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $stmt = $pdo->query("
         SELECT 
+            v.vehicle_id AS vehicleId,
             v.plate_number AS plateNumber, 
             v.vehicle_type AS vehicleType, 
             v.driver_id AS driverId, 

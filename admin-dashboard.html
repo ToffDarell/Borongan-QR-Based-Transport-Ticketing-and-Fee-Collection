@@ -9,7 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="assets/css/confirm-modal.css" />
-  <link rel="stylesheet" href="assets/css/admin-dashboard.css" />
+  <link rel="stylesheet" href="assets/css/admin-dashboard.css?v=20260812-notifications" />
 </head>
 <body>
 <button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
@@ -40,6 +40,22 @@
 
 <!-- MAIN -->
 <div class="main-content">
+  <!-- GLOBAL ADMIN NOTIFICATIONS -->
+  <div class="admin-notification" id="adminNotification">
+    <button type="button" class="notification-bell" id="notificationBell" aria-label="Open notifications" aria-expanded="false" aria-controls="notificationPanel">
+      <i class="fas fa-bell" aria-hidden="true"></i>
+      <span class="notification-badge" id="notificationBadge" hidden>0</span>
+    </button>
+    <section class="notification-panel" id="notificationPanel" aria-label="Notifications" hidden>
+      <div class="notification-panel__header">
+        <h2>Notifications</h2>
+        <button type="button" class="notification-panel__mark" id="markNotificationsRead">Mark all read</button>
+      </div>
+      <div class="notification-list" id="notificationList" role="list">
+        <div class="notification-empty">No notifications yet.</div>
+      </div>
+    </section>
+  </div>
 
   <!-- DASHBOARD -->
   <div id="page-dashboard" class="page-section active">
@@ -236,12 +252,12 @@
         <h3 class="font-bold text-gray-800 mb-3">Scan / Search</h3>
         <div class="text-center py-4">
           <div class="text-6xl text-gray-300 mb-4"><i class="fas fa-qrcode"></i></div>
-          <div class="flex gap-2"><input type="text" id="qrScanInput" class="input-field" placeholder="Driver ID, plate, or name" onkeydown="if(event.key==='Enter') scanQR()"><button class="btn-primary" onclick="scanQR()"><i class="fas fa-search"></i> Find</button></div>
+          <div class="flex gap-2"><input type="text" id="qrScanInput" class="input-field" placeholder="Driver ID, plate, or name"><button class="btn-primary" onclick="scanQR()"><i class="fas fa-search"></i> Find</button></div>
         </div>
       </div>
       <div class="table-card" id="paymentResult">
         <h3 class="font-bold text-gray-800 mb-3">Payment Details</h3>
-        <div id="paymentDetails" class="text-center py-8 text-gray-400"><i class="fas fa-credit-card text-4xl block mb-2"></i>Search for a driver</div>
+        <div id="paymentDetails" class="text-center py-8 text-gray-400" aria-live="polite"><i class="fas fa-credit-card text-4xl block mb-2"></i>Search for a driver</div>
       </div>
     </div>
   </div>
@@ -315,6 +331,6 @@
 
 <div class="modal-overlay" id="vehicleModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-4" id="vehicleModalTitle">Add Vehicle</h2><form id="vehicleForm"><input type="hidden" id="editVehiclePlate"><div class="space-y-3"><input type="text" id="vPlateNumber" class="input-field" placeholder="Plate Number" required><select id="vVehicleType" class="input-field" required><option value="">Type</option><option value="Tricycle">Tricycle</option><option value="Jeepney">Jeepney</option><option value="Multicab">Multicab</option><option value="Bus">Bus</option></select><select id="vDriver" class="input-field"><option value="">Unassigned</option></select><select id="vStatus" class="input-field"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div><div class="flex gap-3 mt-4"><button type="submit" class="btn-primary flex-1" id="vehicleSubmitBtn"><i class="fas fa-save"></i> <span id="vehicleSubmitText">Save</span></button><button type="button" class="btn-outline flex-1" onclick="closeModal('vehicleModal')">Cancel</button></div></form></div></div>
 
-<script src="assets/js/admin-dashboard.js"></script>
+<script src="assets/js/admin-dashboard.js?v=20260812-notifications"></script>
 </body>
 </html>

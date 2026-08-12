@@ -689,6 +689,8 @@
         .id-info-item {
             display: flex;
             flex-direction: column;
+            align-items: center;
+            text-align: center;
             padding: 0.15rem 0;
             border-bottom: 1px solid #f8fafc;
         }
@@ -700,7 +702,10 @@
             letter-spacing: 0.3px;
             display: flex;
             align-items: center;
+            justify-content: center;
+            width: 100%;
             gap: 4px;
+            text-align: center;
         }
         .id-info-item .info-label i {
             font-size: 0.6rem;
@@ -711,6 +716,8 @@
             font-weight: 600;
             color: #1e293b;
             word-break: break-word;
+            width: 100%;
+            text-align: center;
         }
         .id-info-item .info-value.highlight {
             color: var(--primary);
@@ -718,6 +725,7 @@
         .id-info-item.full-width {
             grid-column: 1 / -1;
         }
+        .id-info-item.name-field .info-value { font-size: 1rem; }
         .id-status-row {
             display: flex;
             align-items: center;
@@ -919,6 +927,64 @@
             font-weight: 700;
             color: #1e293b;
             margin-bottom: 1.2rem;
+        }
+        .password-modal-box {
+            max-width: 440px;
+        }
+        .password-modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .password-modal-header h2 {
+            margin-bottom: 0.35rem;
+        }
+        .password-modal-help {
+            color: #64748b;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .password-modal-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            border: 0;
+            border-radius: 0.5rem;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+        .password-modal-close:hover,
+        .password-modal-close:focus-visible {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .password-form {
+            display: grid;
+            gap: 0.9rem;
+        }
+        .password-form label {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .password-error {
+            min-height: 1.25rem;
+            margin: 0;
+            color: #b91c1c;
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+        .password-modal-actions button {
+            min-height: 44px;
         }
         .modal-grid {
             display: grid;
