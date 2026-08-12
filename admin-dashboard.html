@@ -252,7 +252,19 @@
         <h3 class="font-bold text-gray-800 mb-3">Scan / Search</h3>
         <div class="text-center py-4">
           <div class="text-6xl text-gray-300 mb-4"><i class="fas fa-qrcode"></i></div>
-          <div class="flex gap-2"><input type="text" id="qrScanInput" class="input-field" placeholder="Driver ID, plate, or name"><button class="btn-primary" onclick="scanQR()"><i class="fas fa-search"></i> Find</button></div>
+          <label class="sr-only" for="qrScanInput">Driver ID, plate number, name, or QR code</label>
+          <div class="flex gap-2"><input type="text" id="qrScanInput" class="input-field" placeholder="Driver ID, plate, name, or QR code"><button class="btn-primary" onclick="scanQR()"><i class="fas fa-search"></i> Find</button></div>
+          <div class="payment-scanner-controls" aria-label="QR scanner controls">
+            <button type="button" class="btn-outline" id="startQrScanner" aria-controls="qrScannerPanel"><i class="fas fa-camera"></i> Open Camera</button>
+            <label class="btn-outline qr-file-button" for="qrImageInput"><i class="fas fa-image"></i> Scan QR Image<input type="file" id="qrImageInput" accept="image/*" capture="environment"></label>
+            <button type="button" class="btn-danger" id="stopQrScanner" hidden><i class="fas fa-stop"></i> Stop Camera</button>
+          </div>
+          <p class="payment-scanner-help">Use the camera, choose a QR image, or search manually. Camera access is requested only after you select Open Camera.</p>
+          <div class="qr-scanner-panel" id="qrScannerPanel" hidden>
+            <div class="qr-scanner-panel__header"><span><i class="fas fa-qrcode" aria-hidden="true"></i> Point the camera at the driver QR code</span></div>
+            <div class="qr-scanner-reader" id="qrScannerReader"></div>
+          </div>
+          <p class="payment-scanner-status" id="qrScannerStatus" role="status" aria-live="polite"></p>
         </div>
       </div>
       <div class="table-card" id="paymentResult">
@@ -296,7 +308,7 @@
   <div id="page-settings" class="page-section">
     <h1 class="text-2xl font-bold text-gray-800 mb-4">Settings</h1>
     <div class="grid md:grid-cols-2 gap-6">
-      <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Vehicle Fees</h3><div class="space-y-3"><div class="flex items-center justify-between"><span>Tricycle</span><input type="number" id="feeTricycle" class="input-field input-field-sm w-28" value="5"></div><div class="flex items-center justify-between"><span>Jeepney</span><input type="number" id="feeJeepney" class="input-field input-field-sm w-28" value="60"></div><div class="flex items-center justify-between"><span>Multicab</span><input type="number" id="feeMulticab" class="input-field input-field-sm w-28" value="60"></div><div class="flex items-center justify-between"><span>Bus</span><input type="number" id="feeBus" class="input-field input-field-sm w-28" value="100"></div><button class="btn-primary w-full mt-3" onclick="saveFees()"><i class="fas fa-save"></i> Save</button></div></div>
+      <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Vehicle Fees</h3><div class="space-y-3"><div class="flex items-center justify-between"><span>Tricycle</span><input type="number" id="feeTricycle" class="input-field input-field-sm w-28" min="0.01" step="0.01" value="5"></div><div class="flex items-center justify-between"><span>Jeepney</span><input type="number" id="feeJeepney" class="input-field input-field-sm w-28" min="0.01" step="0.01" value="60"></div><div class="flex items-center justify-between"><span>Multicab</span><input type="number" id="feeMulticab" class="input-field input-field-sm w-28" min="0.01" step="0.01" value="60"></div><div class="flex items-center justify-between"><span>Bus</span><input type="number" id="feeBus" class="input-field input-field-sm w-28" min="0.01" step="0.01" value="100"></div><button class="btn-primary w-full mt-3" id="saveFeesButton" onclick="saveFees()"><i class="fas fa-save"></i> Save</button></div></div>
       <div class="table-card"><h3 class="font-bold text-gray-800 mb-3">Admin Profile</h3><div class="space-y-3"><input type="text" id="adminName" class="input-field" value="Administrator"><input type="email" id="adminEmail" class="input-field" value="admin@borongan.gov.ph"><input type="password" id="adminPassword" class="input-field" placeholder="New Password"><input type="password" id="adminConfirmPassword" class="input-field" placeholder="Confirm"><button class="btn-primary w-full" onclick="updateAdmin()"><i class="fas fa-save"></i> Update</button></div></div>
     </div>
   </div>
@@ -331,6 +343,7 @@
 
 <div class="modal-overlay" id="vehicleModal"><div class="modal-box"><h2 class="text-xl font-bold text-gray-800 mb-4" id="vehicleModalTitle">Add Vehicle</h2><form id="vehicleForm"><input type="hidden" id="editVehiclePlate"><div class="space-y-3"><input type="text" id="vPlateNumber" class="input-field" placeholder="Plate Number" required><select id="vVehicleType" class="input-field" required><option value="">Type</option><option value="Tricycle">Tricycle</option><option value="Jeepney">Jeepney</option><option value="Multicab">Multicab</option><option value="Bus">Bus</option></select><select id="vDriver" class="input-field"><option value="">Unassigned</option></select><select id="vStatus" class="input-field"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div><div class="flex gap-3 mt-4"><button type="submit" class="btn-primary flex-1" id="vehicleSubmitBtn"><i class="fas fa-save"></i> <span id="vehicleSubmitText">Save</span></button><button type="button" class="btn-outline flex-1" onclick="closeModal('vehicleModal')">Cancel</button></div></form></div></div>
 
-<script src="assets/js/admin-dashboard.js?v=20260812-notifications"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="assets/js/admin-dashboard.js?v=20260812-complete-modules"></script>
 </body>
 </html>

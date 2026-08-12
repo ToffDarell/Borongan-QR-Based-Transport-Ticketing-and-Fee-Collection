@@ -5,9 +5,24 @@ require 'config.php';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
+    $actor = requireAuthenticatedUser();
     $driverId = trim((string)($_GET['driverId'] ?? ''));
     $where = '';
     $params = [];
+
+    // Drivers may view only their own receipts. Administrators can review all
+    // records or filter the list by a specific driver.
+    if ($actor['role'] === 'driver') {
+        if ($actor['driverId'] === '') {
+            respond(['success' => false, 'error' => 'Driver session is incomplete. Please log in again.'], 401);
+        }
+        if ($driverId !== '' && $driverId !== $actor['driverId']) {
+            respond(['success' => false, 'error' => 'You can only view your own payment history.'], 403);
+        }
+        $driverId = $actor['driverId'];
+    } elseif ($actor['role'] !== 'admin') {
+        respond(['success' => false, 'error' => 'Access denied.'], 403);
+    }
 
     if ($driverId !== '') {
         $where = 'WHERE p.driver_id = ?';
@@ -36,6 +51,7 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    requireAdmin();
     /*
      * TERMINAL FEE POLICY
      * -------------------
@@ -136,4 +152,6 @@ if ($method === 'POST') {
         ]
     ]);
 }
+
+respond(['success' => false, 'error' => 'Method not allowed.'], 405);
 ?>

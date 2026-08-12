@@ -83,7 +83,7 @@
             qrContainer.innerHTML = '';
             
             try {
-                const qrText = `ID:${driver.driverId}|Name:${driver.fullName}|Plate:${driver.plateNumber}|Type:${driver.vehicleType}|License:${driver.licenseNo}`;
+                const qrText = JSON.stringify({ version: 1, driverId: String(driver.driverId || driver.driver_id || ""), plateNumber: String(driver.plateNumber || driver.plate_number || ""), vehicleType: String(driver.vehicleType || driver.vehicle_type || "") });
                 
                 // Make sure QRCode is available
                 if (typeof QRCode !== 'undefined') {

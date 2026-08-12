@@ -52,12 +52,16 @@ const ConfirmModal = {
 let drivers = [];
 let transactions = [];
 let vehicles = [];
+let qrCodes = [];
 let fees = { Tricycle: 5, Jeepney: 60, Multicab: 60, Bus: 100 };
 let activities = [];
 let chartInstance = null;
 let qrUsage = {};
 let adminNotifications = [];
 const adminNotificationsKey = "borongan_admin_notifications";
+let qrScanner = null;
+let qrScannerRunning = false;
+let qrScannerBusy = false;
 
 function normalizeVehicle(vehicle) {
   return {
@@ -81,16 +85,42 @@ function normalizeTransaction(transaction) {
   };
 }
 
+function normalizeQrCode(qrCode) {
+  return {
+    ...qrCode,
+    qrId: qrCode.qrId ?? qrCode.qr_id ?? null,
+    driverId: qrCode.driverId ?? qrCode.driver_id ?? "",
+    vehicleId: qrCode.vehicleId ?? qrCode.vehicle_id ?? null,
+    qrData: qrCode.qrData ?? qrCode.qr_data ?? "",
+    lastScanned: qrCode.lastScanned ?? qrCode.last_scanned ?? null,
+    timesUsed: Number(qrCode.timesUsed ?? qrCode.times_used ?? 0),
+    fullName: qrCode.fullName ?? qrCode.full_name ?? "",
+    vehicleType: qrCode.vehicleType ?? qrCode.vehicle_type ?? "",
+    plateNumber: qrCode.plateNumber ?? qrCode.plate_number ?? "",
+  };
+}
+
+function buildQrPayload(driver) {
+  return JSON.stringify({
+    version: 1,
+    driverId: String(driver.driverId ?? driver.driver_id ?? ""),
+    plateNumber: String(driver.plateNumber ?? driver.plate_number ?? ""),
+    vehicleType: String(driver.vehicleType ?? driver.vehicle_type ?? ""),
+  });
+}
+
 // Load all data from API on start
 async function loadAllDataFromDB() {
-  const [driversRes, vehiclesRes, paymentsRes, feesRes] = await Promise.all([
+  const [driversRes, vehiclesRes, qrRes, paymentsRes, feesRes] = await Promise.all([
     fetch("api/drivers.php").then((r) => r.json()),
     fetch("api/vehicles.php").then((r) => r.json()),
+    fetch("api/qr_codes.php").then((r) => r.json()),
     fetch("api/payments.php").then((r) => r.json()),
     fetch("api/fees.php").then((r) => r.json()),
   ]);
   if (driversRes.success) drivers = driversRes.drivers;
   if (vehiclesRes.success) vehicles = vehiclesRes.vehicles.map(normalizeVehicle);
+  if (qrRes.success) qrCodes = (qrRes.qrCodes || qrRes.qr_codes || []).map(normalizeQrCode);
   if (paymentsRes.success) transactions = paymentsRes.payments.map(normalizeTransaction);
   if (feesRes.success) fees = feesRes.fees;
 }
@@ -349,7 +379,15 @@ function initSidebar() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
-  if (localStorage.getItem("admin_logged_in") !== "true") {
+  try {
+    const sessionResponse = await fetch("api/admin_login.php", { method: "GET" });
+    const session = await sessionResponse.json();
+    if (!session.success) throw new Error("No active admin session");
+    localStorage.setItem("admin_logged_in", "true");
+    localStorage.setItem("admin_name", session.username);
+  } catch {
+    localStorage.removeItem("admin_logged_in");
+    localStorage.removeItem("admin_name");
     window.location.href = "admin-login.html";
     return;
   }
@@ -362,6 +400,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
   initSidebar();
   initNotifications();
+  initQrScannerControls();
   updateLastUpdated();
   
   await loadAllDataFromDB();
@@ -388,8 +427,11 @@ window.logout = function () {
     confirmText: "Yes, logout",
     cancelText: "Cancel",
     onConfirm: function() {
-      localStorage.removeItem("admin_logged_in");
-      window.location.href = "admin-login.html";
+      fetch("api/logout.php", { method: "POST" }).catch(() => {}).finally(() => {
+        localStorage.removeItem("admin_logged_in");
+        localStorage.removeItem("admin_name");
+        window.location.href = "admin-login.html";
+      });
     }
   });
 };
@@ -943,18 +985,21 @@ function renderQRs() {
   }
   table.innerHTML = drivers
     .map((d) => {
-      const usage = qrUsage[d.driverId] || {
-        lastScanned: "Never",
-        timesUsed: 0,
-      };
+      const qrCode = qrCodes.find((code) => code.driverId === d.driverId);
+      const status = qrCode?.status || "Not generated";
+      const statusClass = status === "Active"
+        ? "bg-green-100 text-green-700"
+        : status === "Inactive"
+          ? "bg-red-100 text-red-700"
+          : "bg-slate-100 text-slate-600";
       return `<tr class="border-b border-gray-100">
       <td class="py-2 font-medium">${d.fullName}</td>
       <td class="py-2">${d.vehicleType || "N/A"} - ${d.plateNumber || "N/A"}</td>
       <td class="py-2"><div id="qr-${d.driverId}" style="width:50px;height:50px;"></div></td>
-      <td class="py-2"><span class="px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">Active</span></td>
-      <td class="py-2 text-xs">${usage.lastScanned}</td>
-      <td class="py-2 text-xs">${usage.timesUsed}</td>
-      <td class="py-2"><button class="btn-primary btn-sm" onclick="generateQR('${d.driverId}')"><i class="fas fa-sync"></i></button><button class="btn-outline btn-sm" onclick="printQR('${d.driverId}')"><i class="fas fa-print"></i></button><button class="btn-danger btn-sm" onclick="deleteQR('${d.driverId}')"><i class="fas fa-trash"></i></button></td>
+      <td class="py-2"><span class="px-2 py-1 rounded-full text-xs ${statusClass}">${status}</span></td>
+      <td class="py-2 text-xs">${qrCode?.lastScanned || "Never"}</td>
+      <td class="py-2 text-xs">${qrCode?.timesUsed ?? 0}</td>
+      <td class="py-2"><button class="btn-primary btn-sm" aria-label="Regenerate QR code for ${d.fullName}" onclick="generateQR('${d.driverId}')"><i class="fas fa-sync"></i></button><button class="btn-outline btn-sm" aria-label="Print QR code for ${d.fullName}" onclick="printQR('${d.driverId}')"><i class="fas fa-print"></i></button>${qrCode ? `<button class="btn-danger btn-sm" aria-label="Delete QR code for ${d.fullName}" onclick="deleteQR('${qrCode.qrId}')"><i class="fas fa-trash"></i></button>` : ""}</td>
     </tr>`;
     })
     .join("");
@@ -964,7 +1009,7 @@ function renderQRs() {
       c.innerHTML = "";
       try {
         new QRCode(c, {
-          text: `ID:${d.driverId}|Name:${d.fullName}|Plate:${d.plateNumber}|Type:${d.vehicleType}`,
+          text: buildQrPayload(d),
           width: 50,
           height: 50,
           colorDark: "#b22234",
@@ -976,24 +1021,35 @@ function renderQRs() {
     }
   });
 }
-function generateQR(id) {
-  showToast(
-    `QR regenerated for ${drivers.find((d) => d.driverId === id)?.fullName}`,
-    "success",
-  );
-  renderQRs();
+async function generateQR(id) {
+  const driver = drivers.find((candidate) => candidate.driverId === id);
+  if (!driver) return;
+  try {
+    const response = await fetch("api/qr_codes.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ driverId: id, status: "Active" }),
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error || "Unable to regenerate QR code.");
+    await loadAllDataFromDB();
+    renderQRs();
+    showToast(`QR regenerated for ${driver.fullName}`, "success");
+  } catch (error) {
+    showToast(error.message || "Unable to regenerate QR code.", "error");
+  }
 }
 function printQR(id) {
   window.open(`driver-id.html?id=${id}`, "_blank");
 }
-function deleteQR(id) {
-  showConfirm("Delete QR?", "Remove driver QR code?", () => {
-    fetch("api/drivers.php?id=" + id, { method: "DELETE" })
+function deleteQR(qrId) {
+  showConfirm("Delete QR?", "Remove this QR code only? The driver record will remain.", () => {
+    fetch("api/qr_codes.php?id=" + encodeURIComponent(qrId), { method: "DELETE" })
     .then(r => r.json())
     .then(async res => {
       if (res.success) {
-        showToast("QR/Driver deleted", "error");
-        addActivity("Deleted QR", id);
+        showToast("QR code deleted", "success");
+        addActivity("Deleted QR", "QR code removed");
         await loadAllDataFromDB();
         renderQRs();
         updateDashboard();
@@ -1006,15 +1062,180 @@ function deleteQR(id) {
 }
 
 // ===== PAYMENT =====
-function scanQR(silent = false) {
+function parseQrDriverId(value) {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return { driverId: "", isQrPayload: false };
+
+  try {
+    const payload = JSON.parse(rawValue);
+    if (payload && typeof payload === "object") {
+      return {
+        driverId: String(payload.driverId || "").trim(),
+        isQrPayload: true,
+      };
+    }
+  } catch {
+    // Older printed IDs used a readable ID:DR-0001|... QR format. Keep this
+    // fallback so already-issued cards continue to work while new cards use JSON.
+  }
+
+  const legacyMatch = rawValue.match(/(?:^|\|)ID\s*:\s*([^|]+)/i);
+  if (legacyMatch) {
+    return { driverId: legacyMatch[1].trim(), isQrPayload: true };
+  }
+
+  return { driverId: "", isQrPayload: false };
+}
+
+function setQrScannerStatus(message = "", type = "") {
+  const status = document.getElementById("qrScannerStatus");
+  if (!status) return;
+  status.textContent = message;
+  status.className = "payment-scanner-status" + (type ? ` is-${type}` : "");
+}
+
+function updateQrScannerControls() {
+  const startButton = document.getElementById("startQrScanner");
+  const stopButton = document.getElementById("stopQrScanner");
+  const panel = document.getElementById("qrScannerPanel");
+  if (!startButton || !stopButton || !panel) return;
+  startButton.disabled = qrScannerRunning;
+  stopButton.hidden = !qrScannerRunning;
+  panel.hidden = !qrScannerRunning;
+}
+
+async function stopQrScanner() {
+  if (!qrScanner || !qrScannerRunning) {
+    qrScannerRunning = false;
+    updateQrScannerControls();
+    return;
+  }
+
+  try {
+    await qrScanner.stop();
+  } catch (error) {
+    console.warn("Unable to stop QR camera", error);
+  } finally {
+    qrScannerRunning = false;
+    updateQrScannerControls();
+  }
+}
+
+async function handleDecodedQr(decodedText) {
+  if (qrScannerBusy) return;
+  qrScannerBusy = true;
+
+  try {
+    await stopQrScanner();
+    const parsed = parseQrDriverId(decodedText);
+    const input = document.getElementById("qrScanInput");
+    input.value = parsed.driverId || decodedText;
+    setQrScannerStatus("QR code read. Verifying registered driver…", "success");
+    scanQR(false, true);
+  } finally {
+    qrScannerBusy = false;
+  }
+}
+
+async function startQrScanner() {
+  if (qrScannerRunning) return;
+  if (!window.Html5Qrcode) {
+    setQrScannerStatus("QR scanner is unavailable. Please use manual search or scan a QR image.", "error");
+    return;
+  }
+  if (window.isSecureContext === false) {
+    setQrScannerStatus("Camera scanning requires HTTPS or localhost. Use Scan QR Image when opening the system from another device.", "error");
+    return;
+  }
+
+  const readerId = "qrScannerReader";
+  try {
+    if (!qrScanner) {
+      const formats = window.Html5QrcodeSupportedFormats
+        ? { formatsToSupport: [window.Html5QrcodeSupportedFormats.QR_CODE] }
+        : undefined;
+      qrScanner = formats ? new Html5Qrcode(readerId, formats) : new Html5Qrcode(readerId);
+    }
+
+    setQrScannerStatus("Opening camera…");
+    await qrScanner.start(
+      { facingMode: { ideal: "environment" } },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      handleDecodedQr,
+      () => {}
+    );
+    qrScannerRunning = true;
+    updateQrScannerControls();
+    setQrScannerStatus("Camera is ready. Hold the QR code inside the frame.");
+  } catch (error) {
+    qrScannerRunning = false;
+    updateQrScannerControls();
+    setQrScannerStatus("Unable to open the camera. Check permission, then try again or scan a QR image.", "error");
+  }
+}
+
+async function scanQrImage(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (!window.Html5Qrcode) {
+    setQrScannerStatus("QR image scanning is unavailable. Please use manual search.", "error");
+    return;
+  }
+
+  try {
+    await stopQrScanner();
+    if (!qrScanner) qrScanner = new Html5Qrcode("qrScannerReader");
+    setQrScannerStatus("Reading QR image…");
+    const decodedText = await qrScanner.scanFile(file, true);
+    await qrScanner.clear().catch(() => {});
+    await handleDecodedQr(decodedText);
+  } catch (error) {
+    setQrScannerStatus("No readable QR code was found in that image. Choose a clearer QR image and try again.", "error");
+  }
+}
+
+function initQrScannerControls() {
+  document.getElementById("startQrScanner")?.addEventListener("click", startQrScanner);
+  document.getElementById("stopQrScanner")?.addEventListener("click", () => {
+    stopQrScanner();
+    setQrScannerStatus("Camera stopped.");
+  });
+  document.getElementById("qrImageInput")?.addEventListener("change", scanQrImage);
+  updateQrScannerControls();
+}
+
+function recordVerifiedQrScan(driverId) {
+  const qrCode = qrCodes.find((code) => code.driverId === driverId);
+  if (!qrCode?.qrId) return;
+
+  fetch(`api/qr_codes.php?id=${encodeURIComponent(qrCode.qrId)}&action=scan`, { method: "PATCH" })
+    .then((response) => response.json())
+    .then((result) => {
+      if (result.success) {
+        qrCode.timesUsed += 1;
+        qrCode.lastScanned = new Date().toLocaleString();
+        renderQRs();
+      }
+    })
+    .catch(() => {});
+}
+
+function scanQR(silent = false, scannedViaQr = false) {
   const input = document.getElementById("qrScanInput").value.trim();
   if (!input) {
     if (!silent) showToast("Enter search term", "warning");
     return;
   }
+  const parsedQr = parseQrDriverId(input);
+  if (scannedViaQr && parsedQr.isQrPayload && !parsedQr.driverId) {
+    document.getElementById("paymentDetails").innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-qrcode text-4xl block mb-2"></i>This QR code is not valid for the transport system.</div>';
+    if (!silent) showToast("Invalid transport QR code", "error");
+    return;
+  }
   const driver = drivers.find(
     (d) =>
-      d.driverId === input ||
+      d.driverId === (parsedQr.driverId || input) ||
       d.plateNumber === input.toUpperCase() ||
       d.fullName.toLowerCase().includes(input.toLowerCase()),
   );
@@ -1024,6 +1245,13 @@ function scanQR(silent = false) {
     if (!silent) showToast("Driver not found", "error");
     return;
   }
+  const registeredQr = qrCodes.find((code) => code.driverId === driver.driverId);
+  if (scannedViaQr && (!registeredQr || registeredQr.status !== "Active")) {
+    details.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-ban text-4xl block mb-2"></i>This driver QR code is inactive or unavailable.</div>';
+    if (!silent) showToast("Inactive QR code", "error");
+    return;
+  }
+  if (scannedViaQr) recordVerifiedQrScan(driver.driverId);
   const fee = fees[driver.vehicleType] || 0;
   const driverId = driver.driver_id || driver.driverId;
   const photo = driver.photo
@@ -1412,7 +1640,7 @@ function saveFees() {
     Multicab: parseInt(document.getElementById("feeMulticab").value) || 60,
     Bus: parseInt(document.getElementById("feeBus").value) || 100,
   };
-  localStorage.setItem("borongan_fees", JSON.stringify(fees));
+  localStorage.setItem("borongan_fees", JSON.stringify(fees)); fetch("api/fees.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(fees) }).then(r=>r.json()).then(res => { if(res.success) { fees = res.fees; showToast("Fees saved to database", "success"); } });
   showToast("Fees saved", "success");
   addActivity("Updated Fees", "Vehicle fees updated");
 }

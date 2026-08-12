@@ -2,6 +2,7 @@
 // api/vehicles.php
 require 'config.php';
 
+requireAdmin();
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {

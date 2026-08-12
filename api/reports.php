@@ -2,6 +2,7 @@
 // api/reports.php
 require 'config.php';
 
+requireAdmin();
 $type = $_GET['type'] ?? 'daily';
 
 $query = match($type) {

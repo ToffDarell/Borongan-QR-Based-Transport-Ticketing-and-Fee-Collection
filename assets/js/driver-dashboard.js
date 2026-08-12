@@ -427,8 +427,8 @@ const ConfirmModal = {
 
         function generateQR() {
             const d = currentDriver;
-            const qrText =
-                `ID:${d.driverId}|Name:${d.fullName}|Plate:${d.plateNumber}|Type:${d.vehicleType}|Fee:${getFee(d.vehicleType)}`;
+            const qrText = JSON.stringify({ version: 1, driverId: String(d.driverId || d.driver_id || ""), plateNumber: String(d.plateNumber || d.plate_number || ""), vehicleType: String(d.vehicleType || d.vehicle_type || "") });
+
 
             const qrEl = document.getElementById('qrCode');
             if (qrEl) {
