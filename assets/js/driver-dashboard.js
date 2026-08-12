@@ -52,6 +52,10 @@ const ConfirmModal = {
         let driverTransactions = [];
         let tempPhotoDataURL = null;
         let driverActivityLog = [];
+        let driverNotifications = [];
+        let knownDriverPaymentIds = new Set();
+        let driverPaymentPollingTimer = null;
+        let driverPaymentRefreshInProgress = false;
 
         function updateLastUpdated() {
             document.getElementById('lastUpdatedTime').textContent = new Date().toLocaleTimeString();
@@ -69,6 +73,188 @@ const ConfirmModal = {
         function saveActivityLog(driverId, log) {
             const key = 'borongan_driver_activity_' + driverId;
             localStorage.setItem(key, JSON.stringify(log));
+        }
+
+        // Keep driver notifications separate per driver so one driver's payment
+        // alerts cannot appear in another driver's account on the same browser.
+        function getDriverNotificationStorageKey() {
+            return 'borongan_driver_notifications_' + (currentDriver ? currentDriver.driverId : 'unknown');
+        }
+
+        // Notification content is rendered into HTML, so escape dynamic values
+        // such as receipt numbers before placing them in the notification panel.
+        function escapeDriverNotificationHtml(value) {
+            return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[character]));
+        }
+
+        function formatDriverNotificationTime(timestamp) {
+            const date = new Date(timestamp);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function saveDriverNotifications() {
+            try {
+                localStorage.setItem(getDriverNotificationStorageKey(), JSON.stringify(driverNotifications));
+            } catch (error) {
+                console.warn('Unable to save driver notifications', error);
+            }
+        }
+
+        function renderDriverNotifications() {
+            const list = document.getElementById('driverNotificationList');
+            const badge = document.getElementById('driverNotificationBadge');
+            if (!list || !badge) return;
+
+            const unreadCount = driverNotifications.filter(notification => !notification.read).length;
+            badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+            badge.hidden = unreadCount === 0;
+
+            if (driverNotifications.length === 0) {
+                list.innerHTML = '<div class="driver-notification__empty">No notifications yet.</div>';
+                return;
+            }
+
+            list.innerHTML = driverNotifications.slice(0, 30).map(notification => `
+                <div role="listitem">
+                    <button type="button" class="driver-notification__item ${notification.read ? '' : 'is-unread'}"
+                        data-driver-notification-id="${escapeDriverNotificationHtml(notification.id)}">
+                        <span class="driver-notification__icon"><i class="fas fa-receipt" aria-hidden="true"></i></span>
+                        <span>
+                            <span class="driver-notification__title">${escapeDriverNotificationHtml(notification.title)}</span>
+                            <span class="driver-notification__message">${escapeDriverNotificationHtml(notification.message)}</span>
+                            <span class="driver-notification__time">${escapeDriverNotificationHtml(formatDriverNotificationTime(notification.timestamp))}</span>
+                        </span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addDriverPaymentNotification(payment) {
+            const paymentId = String(payment.id || '');
+            if (!paymentId || driverNotifications.some(notification => notification.paymentId === paymentId)) return;
+
+            const amount = Number(payment.amount || 0).toFixed(2);
+            const paymentDate = [payment.date, payment.time].filter(Boolean).join(' ');
+            driverNotifications.unshift({
+                id: 'driver-notification-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+                paymentId: paymentId,
+                title: 'Terminal fee collected',
+                message: '₱' + amount + ' · Receipt ' + paymentId + (paymentDate ? ' · ' + paymentDate : ''),
+                timestamp: new Date().toISOString(),
+                read: false
+            });
+            driverNotifications = driverNotifications.slice(0, 50);
+            saveDriverNotifications();
+            renderDriverNotifications();
+        }
+
+        function seedTodayDriverPaymentNotifications() {
+            const today = new Date().toISOString().split('T')[0];
+            driverTransactions
+                .filter(payment => payment.date === today)
+                .slice()
+                .sort((first, second) => String(first.time || '').localeCompare(String(second.time || '')))
+                .forEach(addDriverPaymentNotification);
+        }
+
+        function initDriverNotifications() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(getDriverNotificationStorageKey()) || '[]');
+                driverNotifications = Array.isArray(stored) ? stored : [];
+            } catch (error) {
+                driverNotifications = [];
+            }
+
+            // Mark the transactions already loaded as known. Polling will only
+            // create a new alert when a later API response contains a new receipt.
+            knownDriverPaymentIds = new Set(driverTransactions.map(payment => String(payment.id || '')));
+            seedTodayDriverPaymentNotifications();
+
+            const bell = document.getElementById('driverNotificationBell');
+            const panel = document.getElementById('driverNotificationPanel');
+            const wrapper = document.getElementById('driverNotification');
+            const list = document.getElementById('driverNotificationList');
+            const markRead = document.getElementById('markDriverNotificationsRead');
+            if (!bell || !panel || !wrapper || !list || !markRead) return;
+
+            bell.addEventListener('click', event => {
+                event.stopPropagation();
+                const isOpen = panel.hidden;
+                panel.hidden = !isOpen;
+                bell.setAttribute('aria-expanded', String(isOpen));
+            });
+
+            markRead.addEventListener('click', event => {
+                event.stopPropagation();
+                driverNotifications = driverNotifications.map(notification => ({ ...notification, read: true }));
+                saveDriverNotifications();
+                renderDriverNotifications();
+            });
+
+            list.addEventListener('click', event => {
+                const item = event.target.closest('[data-driver-notification-id]');
+                if (!item) return;
+                const notificationId = item.getAttribute('data-driver-notification-id');
+                driverNotifications = driverNotifications.map(notification => notification.id === notificationId
+                    ? { ...notification, read: true }
+                    : notification);
+                saveDriverNotifications();
+                renderDriverNotifications();
+            });
+
+            document.addEventListener('click', event => {
+                if (!wrapper.contains(event.target)) {
+                    panel.hidden = true;
+                    bell.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            renderDriverNotifications();
+        }
+
+        async function refreshDriverPayments() {
+            if (driverPaymentRefreshInProgress || !currentDriver) return;
+            driverPaymentRefreshInProgress = true;
+            const previousPaymentIds = new Set(knownDriverPaymentIds);
+
+            try {
+                await loadDriverTransactions();
+                const newPayments = driverTransactions.filter(payment => {
+                    const paymentId = String(payment.id || '');
+                    return paymentId && !previousPaymentIds.has(paymentId);
+                });
+                knownDriverPaymentIds = new Set(driverTransactions.map(payment => String(payment.id || '')));
+
+                if (newPayments.length > 0) {
+                    newPayments
+                        .slice()
+                        .sort((first, second) => (String(first.date || '') + String(first.time || ''))
+                            .localeCompare(String(second.date || '') + String(second.time || '')))
+                        .forEach(addDriverPaymentNotification);
+                    populateDashboard();
+                    renderPaymentHistory();
+                    checkPaymentReminder();
+                }
+            } finally {
+                driverPaymentRefreshInProgress = false;
+            }
+        }
+
+        function startDriverPaymentPolling() {
+            if (driverPaymentPollingTimer) clearInterval(driverPaymentPollingTimer);
+            driverPaymentPollingTimer = setInterval(refreshDriverPayments, 5000);
         }
 
         function logDriverActivity(action, icon = 'fa-info-circle', logClass = 'log-login') {
@@ -172,6 +358,8 @@ const ConfirmModal = {
                 return;
             }
             await loadDriverTransactions();
+            initDriverNotifications();
+            startDriverPaymentPolling();
 
             logDriverActivity('Logged in to dashboard', 'fa-sign-in-alt', 'log-login');
 

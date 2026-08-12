@@ -279,6 +279,138 @@
             font-size: 0.85rem;
             color: #6b7280;
         }
+        .driver-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .driver-notification {
+            position: relative;
+        }
+        .driver-notification__bell {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            background: #fff;
+            color: #64748b;
+            padding: 0;
+            font: inherit;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .driver-notification__bell:hover,
+        .driver-notification__bell:focus-visible,
+        .driver-notification__bell[aria-expanded="true"] {
+            color: var(--primary);
+            border-color: #f0b7bf;
+            box-shadow: 0 6px 16px rgba(178, 34, 52, 0.16);
+            outline: none;
+        }
+        .driver-notification__badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 5px;
+            border: 2px solid var(--bg-light);
+            border-radius: 999px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .driver-notification__panel {
+            position: absolute;
+            top: 52px;
+            right: 0;
+            z-index: 1200;
+            width: min(340px, calc(100vw - 2rem));
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.85rem;
+            background: #fff;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+        }
+        .driver-notification__panel[hidden] {
+            display: none;
+        }
+        .driver-notification__panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .driver-notification__panel-header h2 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+        .driver-notification__panel-header button {
+            border: 0;
+            background: transparent;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .driver-notification__panel-header button:hover,
+        .driver-notification__panel-header button:focus-visible {
+            text-decoration: underline;
+            outline: none;
+        }
+        .driver-notification__list {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .driver-notification__item {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1fr);
+            gap: 0.7rem;
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 0;
+            border-bottom: 1px solid #f1f5f9;
+            background: #fff;
+            color: #334155;
+            text-align: left;
+            cursor: pointer;
+        }
+        .driver-notification__item:hover,
+        .driver-notification__item:focus-visible {
+            background: #f8fafc;
+            outline: none;
+        }
+        .driver-notification__item.is-unread {
+            background: #fff7f8;
+        }
+        .driver-notification__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #fbe9ea;
+            color: var(--primary);
+        }
+        .driver-notification__title { display: block; font-size: 0.8rem; font-weight: 700; }
+        .driver-notification__message { display: block; margin-top: 0.15rem; color: #64748b; font-size: 0.75rem; line-height: 1.4; }
+        .driver-notification__time { display: block; margin-top: 0.3rem; color: #94a3b8; font-size: 0.68rem; }
+        .driver-notification__empty { padding: 1.5rem 1rem; color: #94a3b8; font-size: 0.8rem; text-align: center; }
 
         .stat-card {
             background: white;
@@ -1293,6 +1425,10 @@
             }
             .dashboard-header .greeting h1 {
                 font-size: 1.2rem;
+            }
+            .driver-header-actions {
+                width: 100%;
+                justify-content: space-between;
             }
             .id-header .logo-row {
                 justify-content: center;

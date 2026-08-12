@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="assets/css/confirm-modal.css?v=20260812" />
-    <link rel="stylesheet" href="assets/css/driver-dashboard.css?v=20260812-center-all" />
+    <link rel="stylesheet" href="assets/css/driver-dashboard.css?v=20260812-driver-notifications" />
 </head>
 <body>
 
@@ -82,8 +82,25 @@
                     <h1>Dashboard</h1>
                     <p>Welcome back, <span class="font-semibold text-primary" id="driverName">Driver</span> · Last updated: <span id="lastUpdatedTime">--</span></p>
                 </div>
-                <div class="text-right text-sm text-gray-500">
-                    <span id="currentDate"></span>
+                <div class="driver-header-actions">
+                    <div class="text-right text-sm text-gray-500">
+                        <span id="currentDate"></span>
+                    </div>
+                    <div class="driver-notification" id="driverNotification">
+                        <button type="button" class="driver-notification__bell" id="driverNotificationBell" aria-label="Open driver notifications" aria-expanded="false" aria-controls="driverNotificationPanel">
+                            <i class="fas fa-bell" aria-hidden="true"></i>
+                            <span class="driver-notification__badge" id="driverNotificationBadge" hidden>0</span>
+                        </button>
+                        <section class="driver-notification__panel" id="driverNotificationPanel" aria-label="Driver notifications" hidden>
+                            <div class="driver-notification__panel-header">
+                                <h2>Notifications</h2>
+                                <button type="button" id="markDriverNotificationsRead">Mark all read</button>
+                            </div>
+                            <div class="driver-notification__list" id="driverNotificationList" role="list">
+                                <div class="driver-notification__empty">No notifications yet.</div>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
 
@@ -465,6 +482,6 @@
         </div>
     </div>
 
-    <script src="assets/js/driver-dashboard.js?v=20260812"></script>
+    <script src="assets/js/driver-dashboard.js?v=20260812-driver-notifications"></script>
 </body>
 </html>
