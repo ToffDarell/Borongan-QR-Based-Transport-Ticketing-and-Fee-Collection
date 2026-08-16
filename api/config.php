@@ -19,11 +19,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-$host = getenv('DB_HOST') ?: 'localhost';
-$db   = getenv('DB_NAME') ?: 'borongan_db';
-$user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
-$port = getenv('DB_PORT') ?: 3307;
+$host = 'localhost';
+$db   = 'borongan_db';
+$user = 'root';      // XAMPP default
+$pass = '';          // XAMPP default (blank)
+$port = 3307;        // xampp8.2 uses port 3307
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8", $user, $pass);
