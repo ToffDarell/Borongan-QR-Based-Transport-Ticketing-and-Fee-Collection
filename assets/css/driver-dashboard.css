@@ -292,43 +292,54 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 44px;
-            height: 44px;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.75rem;
+            width: 40px;
+            height: 40px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 50%;
             background: #fff;
-            color: #64748b;
+            color: #475569;
             padding: 0;
             font: inherit;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
             cursor: pointer;
-            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease;
+            font-size: 1.15rem;
         }
         .driver-notification__bell:hover,
         .driver-notification__bell:focus-visible,
         .driver-notification__bell[aria-expanded="true"] {
             color: var(--primary);
             border-color: #f0b7bf;
-            box-shadow: 0 6px 16px rgba(178, 34, 52, 0.16);
+            background: #fff7f8;
+            box-shadow: 0 4px 14px rgba(178, 34, 52, 0.15);
+            transform: translateY(-1px);
             outline: none;
+        }
+        .bell-icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            pointer-events: none;
+            display: block;
         }
         .driver-notification__badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -3px;
+            right: -3px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 19px;
-            height: 19px;
-            padding: 0 5px;
-            border: 2px solid var(--bg-light);
-            border-radius: 999px;
-            background: var(--primary);
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border: 2px solid #ffffff;
+            border-radius: 9999px;
+            background: #b22234;
             color: #fff;
             font-size: 0.65rem;
             font-weight: 700;
             line-height: 1;
+            box-shadow: 0 2px 5px rgba(178, 34, 52, 0.35);
         }
         .driver-notification__panel {
             position: absolute;

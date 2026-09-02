@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Borongan Transport · Admin Login</title>
 
-    <!-- Web Icon / Favicon -->
+    <!-- favicon icon -->
     <link rel="icon" type="image/jpeg" href="images/borongan-logo.jpg" />
     <link rel="apple-touch-icon" href="images/borongan-logo.jpg" />
 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
-    <link rel="stylesheet" href="assets/css/admin-login.css" />
+    <link rel="stylesheet" href="assets/css/admin-login.css?v=20260902_nist" />
 </head>
 
 <body>
@@ -75,9 +75,15 @@
                      Login as Admin
                 </button>
 
-                <div class="text-center mt-4">
-                    <span class="text-xs text-[#5a7489]">Return to </span>
-                    <a href="login.html" class="link-accent text-xs">Driver Login</a>
+                <div class="portal-divider">
+                    <span>Navigation</span>
+                </div>
+
+                <div class="text-center">
+                    <a href="login.html" class="btn-portal-switch">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Return to Driver Login</span>
+                    </a>
                 </div>
 
             </form>
@@ -86,20 +92,81 @@
 
     </div>
 
-    <!-- Forgot Password Modal -->
+    <!-- forgot password modal -->
     <div class="modal-overlay" id="forgotModal">
         <div class="modal-box">
             <h3>Reset Admin Password</h3>
-            <p>Enter your admin username and we'll send you a link to reset your password.</p>
-            <input type="text" id="resetUser" class="input-field" placeholder="Enter admin username" autocomplete="off" />
+            <p>Enter your admin username and your new password to reset your credentials.</p>
+
+            <div class="form-group">
+                <label for="resetUser">Admin Username</label>
+                <input type="text" id="resetUser" class="input-field" placeholder="Enter admin username" autocomplete="off" />
+            </div>
+
+            <div class="form-group">
+                <label for="resetNewPass">New Password</label>
+                <div class="pw-wrapper">
+                    <input type="password" id="resetNewPass" class="input-field" placeholder="Minimum 12 characters" autocomplete="new-password" />
+                    <button type="button" id="toggleResetPass" class="toggle-pw" aria-label="Toggle new password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+
+                <!-- password rules popup -->
+                <div class="pw-popover" id="resetPwPopover">
+                    <div class="pw-strength-track">
+                        <div class="track-bar" id="resetBar1"></div>
+                        <div class="track-bar" id="resetBar2"></div>
+                        <div class="track-bar" id="resetBar3"></div>
+                        <div class="track-bar" id="resetBar4"></div>
+                    </div>
+                    <div id="resetPwStrengthText" class="pw-strength-label">Use 12 or more characters</div>
+
+                    <div class="pw-req-grid" id="resetPwRequirements">
+                        <div class="req-item" id="resetReqLength">
+                            <span class="icon"><i class="far fa-circle"></i></span>
+                            <span>At least 12 characters</span>
+                        </div>
+                        <div class="req-item" id="resetReqUpper">
+                            <span class="icon"><i class="far fa-circle"></i></span>
+                            <span>One uppercase letter</span>
+                        </div>
+                        <div class="req-item" id="resetReqLower">
+                            <span class="icon"><i class="far fa-circle"></i></span>
+                            <span>One lowercase letter</span>
+                        </div>
+                        <div class="req-item" id="resetReqNumber">
+                            <span class="icon"><i class="far fa-circle"></i></span>
+                            <span>One number</span>
+                        </div>
+                        <div class="req-item" id="resetReqSpecial">
+                            <span class="icon"><i class="far fa-circle"></i></span>
+                            <span>One special symbol</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="resetConfirmPass">Confirm New Password</label>
+                <div class="pw-wrapper">
+                    <input type="password" id="resetConfirmPass" class="input-field" placeholder="Re-enter your password" autocomplete="new-password" />
+                    <button type="button" id="toggleResetConfirm" class="toggle-pw" aria-label="Toggle confirm password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div id="resetConfirmMatch" class="pw-match-label"></div>
+            </div>
+
             <div id="modalMsg" class="modal-message"></div>
+
             <div class="modal-actions">
-                <button class="btn-cancel" id="modalCancel">Cancel</button>
-                <button class="btn-send" id="modalSend">Send Reset Link</button>
+                <button type="button" class="btn-cancel" id="modalCancel">Cancel</button>
+                <button type="button" class="btn-send" id="modalSend">Reset Password</button>
             </div>
         </div>
     </div>
 
-    <script src="assets/js/admin-login.js"></script>
+    <script src="assets/js/admin-login.js?v=20260902_nist"></script>
 </body>
 </html>

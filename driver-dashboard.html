@@ -11,7 +11,7 @@
     <link rel="icon" type="image/jpeg" href="images/borongan-logo.jpg" />
     <link rel="apple-touch-icon" href="images/borongan-logo.jpg" />
     <link rel="stylesheet" href="assets/css/confirm-modal.css?v=20260812" />
-    <link rel="stylesheet" href="assets/css/driver-dashboard.css?v=20260812-driver-notifications" />
+    <link rel="stylesheet" href="assets/css/driver-dashboard.css?v=20260902_bell" />
 </head>
 <body>
 
@@ -77,7 +77,7 @@
     <!-- ===== MAIN ===== -->
     <div class="main-content">
 
-        <!-- ===== DASHBOARD ===== -->
+        <!-- dashboard section -->
         <div id="page-dashboard" class="page-section active">
             <div class="dashboard-header">
                 <div class="greeting">
@@ -90,7 +90,10 @@
                     </div>
                     <div class="driver-notification" id="driverNotification">
                         <button type="button" class="driver-notification__bell" id="driverNotificationBell" aria-label="Open driver notifications" aria-expanded="false" aria-controls="driverNotificationPanel">
-                            <i class="fas fa-bell" aria-hidden="true"></i>
+                            <svg class="bell-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
                             <span class="driver-notification__badge" id="driverNotificationBadge" hidden>0</span>
                         </button>
                         <section class="driver-notification__panel" id="driverNotificationPanel" aria-label="Driver notifications" hidden>
@@ -106,7 +109,7 @@
                 </div>
             </div>
 
-            <!-- Stats -->
+            <!-- stat cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
                 <div class="stat-card card-blue">
                     <div class="flex items-center justify-between">

@@ -157,7 +157,7 @@ function renderNotifications() {
 
   list.innerHTML = adminNotifications.slice(0, 30).map((notification) => `
     <button type="button" class="notification-item ${notification.read ? "" : "is-unread"}" data-notification-id="${escapeHtml(notification.id)}" role="listitem">
-      <span class="notification-item__icon"><i class="fas fa-bell" aria-hidden="true"></i></span>
+      <span class="notification-item__icon"><i class="fa-regular fa-bell" aria-hidden="true"></i></span>
       <span>
         <span class="notification-item__title">${escapeHtml(notification.title)}</span>
         <span class="notification-item__message">${escapeHtml(notification.message)}</span>
@@ -333,13 +333,44 @@ function navigateTo(page) {
     .forEach((i) => i.classList.remove("active"));
   document
     .querySelector(`.sidebar-item[data-page="${page}"]`)
-    ?.classList.add("active");
-  if (window.innerWidth <= 768)
-    document.getElementById("sidebar").classList.remove("open");
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, {
+      body: message,
+      icon: "images/borongan-logo.jpg"
+    });
+  }
+}
+
+function addActivity(action, details) {
+  const now = new Date();
+  let badgeClass = "updated";
+  let icon = "fa-pencil";
+  if (action.includes("Added")) {
+    badgeClass = "added";
+    icon = "fa-plus-circle";
+  } else if (action.includes("Deleted")) {
+    badgeClass = "deleted";
+    icon = "fa-trash";
+  } else if (action.includes("Payment")) {
+    badgeClass = "payment";
+    icon = "fa-credit-card";
+  }
+  activities.unshift({
+    action,
+    details,
+    time: now.toTimeString().slice(0, 5),
+    timestamp: now.toISOString(),
+    badgeClass,
+    icon,
+  });
+  if (activities.length > 50) activities.pop();
+  localStorage.setItem("borongan_activities", JSON.stringify(activities));
+  renderActivities();
 }
 
 function renderActivities() {
   const el = document.getElementById("recentActivities");
+  if (!el) return;
   if (!activities.length) {
     el.innerHTML =
       '<div class="text-center py-4 text-gray-400 text-sm">No recent activities</div>';
@@ -359,6 +390,25 @@ function renderActivities() {
     .join("");
 }
 
+function navigateTo(page) {
+  document
+    .querySelectorAll(".page-section")
+    .forEach((s) => s.classList.remove("active"));
+  const pg = document.getElementById("page-" + page);
+  if (pg) pg.classList.add("active");
+  document
+    .querySelectorAll(".sidebar-item")
+    .forEach((i) => i.classList.remove("active"));
+  const navItem = document.querySelector(`.sidebar-item[data-page="${page}"]`);
+  if (navItem) navItem.classList.add("active");
+  if (page === "settings") {
+    loadFees();
+    loadAdminProfile();
+  }
+  if (window.innerWidth <= 768)
+    document.getElementById("sidebar").classList.remove("open");
+}
+
 function initSidebar() {
   document.querySelectorAll(".sidebar-item[data-page]").forEach((item) => {
     item.addEventListener("click", async function () {
@@ -372,6 +422,10 @@ function initSidebar() {
         .querySelectorAll(".sidebar-item")
         .forEach((i) => i.classList.remove("active"));
       this.classList.add("active");
+      if (this.dataset.page === "settings") {
+        loadFees();
+        loadAdminProfile();
+      }
       if (window.innerWidth <= 768)
         document.getElementById("sidebar").classList.remove("open");
     });
@@ -401,11 +455,13 @@ document.addEventListener("DOMContentLoaded", async function () {
   initSidebar();
   initNotifications();
   initQrScannerControls();
+  initSettingsForm();
   updateLastUpdated();
   
   await loadAllDataFromDB();
   
   loadFees();
+  loadAdminProfile();
   loadVehicleDrivers();
   updateDashboard();
   renderDrivers();
@@ -1626,33 +1682,313 @@ function generateReport(type) {
   showToast(`Report generated: ${reportTypeLabel}`, "success");
 }
 
-// ===== SETTINGS =====
+// settings functions
 function loadFees() {
-  document.getElementById("feeTricycle").value = fees.Tricycle || 5;
-  document.getElementById("feeJeepney").value = fees.Jeepney || 60;
-  document.getElementById("feeMulticab").value = fees.Multicab || 60;
-  document.getElementById("feeBus").value = fees.Bus || 100;
+  const t = document.getElementById("feeTricycle");
+  const j = document.getElementById("feeJeepney");
+  const m = document.getElementById("feeMulticab");
+  const b = document.getElementById("feeBus");
+  if (t) t.value = fees.Tricycle || 5;
+  if (j) j.value = fees.Jeepney || 60;
+  if (m) m.value = fees.Multicab || 60;
+  if (b) b.value = fees.Bus || 100;
 }
-function saveFees() {
+
+async function saveFees() {
+  const saveBtn = document.getElementById("saveFeesButton");
+  const origHtml = saveBtn ? saveBtn.innerHTML : "";
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+  }
+
   fees = {
-    Tricycle: parseInt(document.getElementById("feeTricycle").value) || 5,
-    Jeepney: parseInt(document.getElementById("feeJeepney").value) || 60,
-    Multicab: parseInt(document.getElementById("feeMulticab").value) || 60,
-    Bus: parseInt(document.getElementById("feeBus").value) || 100,
+    Tricycle: parseFloat(document.getElementById("feeTricycle")?.value) || 5,
+    Jeepney: parseFloat(document.getElementById("feeJeepney")?.value) || 60,
+    Multicab: parseFloat(document.getElementById("feeMulticab")?.value) || 60,
+    Bus: parseFloat(document.getElementById("feeBus")?.value) || 100,
   };
-  localStorage.setItem("borongan_fees", JSON.stringify(fees)); fetch("api/fees.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(fees) }).then(r=>r.json()).then(res => { if(res.success) { fees = res.fees; showToast("Fees saved to database", "success"); } });
-  showToast("Fees saved", "success");
-  addActivity("Updated Fees", "Vehicle fees updated");
+
+  try {
+    const res = await fetch("api/fees.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fees),
+    });
+    const data = await res.json();
+    if (data.success) {
+      fees = data.fees;
+      localStorage.setItem("borongan_fees", JSON.stringify(fees));
+      showToast("Vehicle fees updated successfully!", "success");
+      addActivity("Updated Fees", "Vehicle fees updated");
+    } else {
+      showToast(data.error || "Failed to update vehicle fees", "error");
+    }
+  } catch (err) {
+    showToast("Server connection failed", "error");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = origHtml || '<i class="fas fa-save"></i> <span>Save Fee Settings</span>';
+    }
+  }
 }
-function updateAdmin() {
-  const p = document.getElementById("adminPassword").value,
-    c = document.getElementById("adminConfirmPassword").value;
-  if (p && p !== c) {
-    showToast("Passwords do not match", "error");
+
+async function loadAdminProfile() {
+  const adminNameField = document.getElementById("adminName");
+  if (!adminNameField) return;
+  try {
+    const res = await fetch("api/admin_profile.php", { method: "GET" });
+    const data = await res.json();
+    if (data.success && data.username) {
+      adminNameField.value = data.username;
+      localStorage.setItem("admin_name", data.username);
+    } else {
+      adminNameField.value = localStorage.getItem("admin_name") || "admin";
+    }
+  } catch {
+    adminNameField.value = localStorage.getItem("admin_name") || "admin";
+  }
+}
+
+async function updateAdmin() {
+  const usernameField = document.getElementById("adminName");
+  const passField = document.getElementById("adminPassword");
+  const confirmField = document.getElementById("adminConfirmPassword");
+  const matchMsg = document.getElementById("adminPwMatchMsg");
+  const btn = document.getElementById("updateAdminBtn");
+  const btnText = document.getElementById("updateAdminBtnText");
+
+  const username = usernameField ? usernameField.value.trim() : "";
+  const newPassword = passField ? passField.value : "";
+  const confirmPassword = confirmField ? confirmField.value : "";
+
+  if (!username) {
+    showToast("Username cannot be empty", "error");
+    if (usernameField) usernameField.focus();
     return;
   }
-  showToast("Profile updated", "success");
-  addActivity("Updated Profile", "Admin profile");
-  document.getElementById("adminPassword").value = "";
-  document.getElementById("adminConfirmPassword").value = "";
+
+  if (newPassword || confirmPassword) {
+    if (newPassword.length < 12) {
+      showToast("Password must be at least 12 characters", "error");
+      if (passField) passField.focus();
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      showToast("Password must include an uppercase letter", "error");
+      if (passField) passField.focus();
+      return;
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      showToast("Password must include a lowercase letter", "error");
+      if (passField) passField.focus();
+      return;
+    }
+    if (!/\d/.test(newPassword)) {
+      showToast("Password must include a number", "error");
+      if (passField) passField.focus();
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      showToast("Password must include a special symbol", "error");
+      if (passField) passField.focus();
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("Passwords do not match", "error");
+      if (confirmField) confirmField.focus();
+      return;
+    }
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = "Updating...";
+
+  try {
+    const res = await fetch("api/admin_profile.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        newPassword,
+        confirmPassword,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message || "Admin profile updated successfully!", "success");
+      localStorage.setItem("admin_name", data.username);
+      const greeting = document.getElementById("adminGreetingName");
+      if (greeting) greeting.textContent = data.username;
+      if (passField) passField.value = "";
+      if (confirmField) confirmField.value = "";
+      if (matchMsg) matchMsg.textContent = "";
+      addActivity("Updated Profile", `Admin username updated to '${data.username}'`);
+    } else {
+      showToast(data.error || "Failed to update profile", "error");
+    }
+  } catch {
+    showToast("Server connection error", "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = "Update Admin Profile";
+  }
+}
+
+function initSettingsForm() {
+  const togglePass = document.getElementById("toggleAdminPass");
+  const toggleConfirm = document.getElementById("toggleAdminConfirmPass");
+  const passField = document.getElementById("adminPassword");
+  const confirmField = document.getElementById("adminConfirmPassword");
+  const matchMsg = document.getElementById("adminPwMatchMsg");
+
+  function setupToggle(btn, input) {
+    if (!btn || !input) return;
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const isPass = input.type === "password";
+      input.type = isPass ? "text" : "password";
+      const icon = btn.querySelector("i");
+      if (icon) icon.className = isPass ? "fas fa-eye-slash" : "fas fa-eye";
+    });
+  }
+
+  setupToggle(togglePass, passField);
+  setupToggle(toggleConfirm, confirmField);
+
+  function checkMatch() {
+    if (!matchMsg || !passField || !confirmField) return;
+    const p = passField.value;
+    const c = confirmField.value;
+    if (!c) {
+      matchMsg.textContent = "";
+      return;
+    }
+    if (p === c) {
+      matchMsg.textContent = "✓ Passwords match";
+      matchMsg.style.color = "#10b981";
+    } else {
+      matchMsg.textContent = "Passwords do not match yet";
+      matchMsg.style.color = "#ef4444";
+    }
+  }
+
+  if (passField) passField.addEventListener("input", checkMatch);
+  if (confirmField) confirmField.addEventListener("input", checkMatch);
+}
+
+// export transactions to csv
+function exportTransactionsCSV() {
+  if (!transactions || !transactions.length) {
+    showToast("No transactions available to export", "error");
+    return;
+  }
+  const headers = ["Receipt Number", "Driver ID", "Driver Name", "Plate Number", "Vehicle Type", "Amount", "Date", "Time", "Status"];
+  const rows = transactions.map(t => [
+    `"${t.receipt || t.receipt_number || ""}"`,
+    `"${t.driverId || t.driver_id || ""}"`,
+    `"${t.driverName || t.driver_name || ""}"`,
+    `"${t.plate || t.plate_number || ""}"`,
+    `"${t.vehicleType || t.vehicle_type || ""}"`,
+    `"${t.amount || 0}"`,
+    `"${t.date || ""}"`,
+    `"${t.time || ""}"`,
+    `"${t.status || "Paid"}"`
+  ]);
+
+  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  const dateStr = new Date().toISOString().slice(0, 10);
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `borongan_transactions_${dateStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("Transactions exported successfully!", "success");
+}
+
+// export drivers to csv
+function exportDriversCSV() {
+  if (!drivers || !drivers.length) {
+    showToast("No drivers available to export", "error");
+    return;
+  }
+  const headers = ["Driver ID", "First Name", "Last Name", "Vehicle Type", "Plate Number", "Phone", "License", "Status"];
+  const rows = drivers.map(d => [
+    `"${d.driverId || d.id || ""}"`,
+    `"${d.firstName || d.first_name || ""}"`,
+    `"${d.lastName || d.last_name || ""}"`,
+    `"${d.vehicleType || d.vehicle_type || ""}"`,
+    `"${d.plateNumber || d.plate_number || ""}"`,
+    `"${d.phone || d.contact || ""}"`,
+    `"${d.license || d.license_number || ""}"`,
+    `"${d.status || "Active"}"`
+  ]);
+
+  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  const dateStr = new Date().toISOString().slice(0, 10);
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `borongan_drivers_${dateStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("Drivers exported successfully!", "success");
+}
+
+// export complete system backup as json
+function exportSystemBackupJSON() {
+  const backupData = {
+    exportDate: new Date().toISOString(),
+    system: "Borongan QR Transport Ticketing",
+    version: "2.4.0",
+    fees: fees || {},
+    driversCount: (drivers || []).length,
+    vehiclesCount: (vehicles || []).length,
+    transactionsCount: (transactions || []).length,
+    drivers: drivers || [],
+    vehicles: vehicles || [],
+    transactions: transactions || [],
+    activities: activities || []
+  };
+
+  const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+  const link = document.createElement("a");
+  const dateStr = new Date().toISOString().slice(0, 10);
+  link.setAttribute("href", jsonStr);
+  link.setAttribute("download", `borongan_system_backup_${dateStr}.json`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("System backup downloaded!", "success");
+}
+
+// save terminal preferences
+function savePreferences() {
+  const termName = document.getElementById("prefTerminalName")?.value || "Borongan Integrated Transport Terminal";
+  const chime = document.getElementById("prefSoundChime")?.checked ?? true;
+  const autoRec = document.getElementById("prefAutoReceipt")?.checked ?? true;
+  const pollRate = document.getElementById("prefPollingRate")?.value || "5000";
+
+  const prefs = { termName, chime, autoRec, pollRate };
+  localStorage.setItem("borongan_preferences", JSON.stringify(prefs));
+  showToast("Terminal preferences saved successfully!", "success");
+}
+
+// check live database diagnostics
+async function checkSystemHealth() {
+  try {
+    const res = await fetch("api/stats.php");
+    const data = await res.json();
+    if (data.success) {
+      showToast("Database and server connections are healthy!", "success");
+    } else {
+      showToast("Database responded with an alert", "error");
+    }
+  } catch {
+    showToast("Server connection error during diagnostic check", "error");
+  }
 }

@@ -107,8 +107,8 @@
     .main-content { position: relative; margin-left: 260px; padding: 1.5rem; min-height: 100vh; background: var(--bg-light); }
 
     .admin-notification {
-      position: absolute;
-      top: 1.5rem;
+      position: fixed;
+      top: 1.25rem;
       right: 1.5rem;
       z-index: 1100;
     }
@@ -117,52 +117,63 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.75rem;
-      background: #fff;
+      width: 40px;
+      height: 40px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 50%;
+      background: #ffffff;
       color: #64748b;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
       cursor: pointer;
-      transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s ease;
+      font-size: 1.05rem;
     }
     .notification-bell:hover,
     .notification-bell:focus-visible,
     .notification-bell[aria-expanded="true"] {
       color: var(--primary);
       border-color: #f0b7bf;
-      box-shadow: 0 6px 16px rgba(178, 34, 52, 0.16);
+      background: #fff7f8;
+      box-shadow: 0 4px 14px rgba(178, 34, 52, 0.15);
+      transform: translateY(-1px);
       outline: none;
+    }
+    .bell-icon {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      pointer-events: none;
+      display: block;
     }
     .notification-badge {
       position: absolute;
-      top: -5px;
-      right: -5px;
+      top: -3px;
+      right: -3px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 19px;
-      height: 19px;
-      padding: 0 5px;
-      border: 2px solid var(--bg-light);
-      border-radius: 999px;
-      background: var(--primary);
-      color: #fff;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border: 2px solid #ffffff;
+      border-radius: 9999px;
+      background: #b22234;
+      color: #ffffff;
       font-size: 0.65rem;
       font-weight: 700;
       line-height: 1;
+      box-shadow: 0 2px 5px rgba(178, 34, 52, 0.35);
     }
     .notification-panel {
       position: absolute;
-      top: 52px;
+      top: 48px;
       right: 0;
       width: min(340px, calc(100vw - 2rem));
       overflow: hidden;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.85rem;
-      background: #fff;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      background: #ffffff;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
     }
     .notification-panel[hidden] { display: none; }
     .notification-panel__header {
@@ -224,9 +235,7 @@
     .notification-item__time { display: block; margin-top: 0.3rem; color: #94a3b8; font-size: 0.68rem; }
     .notification-empty { padding: 1.5rem 1rem; color: #94a3b8; font-size: 0.8rem; text-align: center; }
 
-    /* Reserve the bell's top-row space on every tab so it never covers
-       filters, export buttons, or page-specific controls. */
-    .page-section:not(#page-dashboard) { padding-top: 4rem; }
+    /* no extra top spacing needed — bell is fixed positioned */
 
     .stat-card {
       background: white;
@@ -686,6 +695,9 @@
       .mobile-toggle { display: block; }
       .stat-card .value { font-size: 1.5rem; }
       .toast-container { max-width: 90%; right: 10px; top: 10px; }
+      .mobile-toggle { display: block; }
+      .stat-card .value { font-size: 1.5rem; }
+      .toast-container { max-width: 90%; right: 10px; top: 10px; }
       .dashboard-header .header-right .search-box input { width: 100px; }
       .logo-circle { width: 44px; height: 44px; }
       .logo-circle img { width: 34px; height: 34px; }
@@ -699,4 +711,39 @@
       body { margin: 0 !important; padding: 0 !important; background: white !important; }
       .main-content { margin: 0 !important; padding: 0 !important; background: white !important; }
       .admin-notification { display: none !important; }
+    }
+
+    /* settings page styling */
+    .fee-row {
+      transition: all 0.2s ease;
+    }
+    .fee-row:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .fee-input-group {
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .fee-input-group:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(178, 34, 52, 0.12);
+    }
+    .pw-wrapper {
+      position: relative;
+    }
+    .pw-wrapper .toggle-pw {
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: 0;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 4px 6px;
+      z-index: 5;
+    }
+    .pw-wrapper .toggle-pw:hover {
+      color: var(--primary);
     }

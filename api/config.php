@@ -5,11 +5,10 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') { exit(0); }
 
-// Browser storage is only used for display convenience. The server session is
-// the source of truth for every protected API request.
-if (session_status() !== PHP_SESSION_ACTIVE) {
+// start session for api checks
+if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
     $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
     session_set_cookie_params([
         'httponly' => true,
@@ -21,9 +20,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $host = 'localhost';
 $db   = 'borongan_db';
-$user = 'root';      // XAMPP default
-$pass = '';          // XAMPP default (blank)
-$port = 3307;        // xampp8.2 uses port 3307
+$user = 'root';      // xampp default user
+$pass = '';          // blank password
+$port = 3307;        // mysql port
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8", $user, $pass);
@@ -91,8 +90,7 @@ function endAuthenticatedSession() {
     session_destroy();
 }
 
-// Existing development accounts used SHA-256. Keep them usable once, then
-// replace the stored value with PHP's stronger password_hash format.
+// check password and update old hash if needed
 function verifyPasswordAndUpgrade($pdo, $user, $password) {
     $storedHash = (string)($user['password'] ?? '');
     if (password_verify($password, $storedHash)) {

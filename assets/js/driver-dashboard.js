@@ -177,8 +177,7 @@ const ConfirmModal = {
                 driverNotifications = [];
             }
 
-            // Mark the transactions already loaded as known. Polling will only
-            // create a new alert when a later API response contains a new receipt.
+            // track existing payments to avoid duplicate notifications
             knownDriverPaymentIds = new Set(driverTransactions.map(payment => String(payment.id || '')));
             seedTodayDriverPaymentNotifications();
 

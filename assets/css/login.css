@@ -1,13 +1,13 @@
-/* ----- Brand Red Theme (cohesive with Admin & Driver Dashboards) ----- */
+/* theme colors */
     :root {
-      --primary-dark: #b22234;      /* Borongan Red */
+      --primary-dark: #b22234;      /* borongan red */
       --primary-mid: #c62828;       /* mid red */
       --primary-light: #e53935;     /* hover red */
-      --accent-gold: #d4a843;       /* subtle gold accent */
+      --accent-gold: #d4a843;       /* gold accent */
       --bg-soft: #f4f7fc;
       --card-white: #ffffff;
-      --text-dark: #1e293b;         /* neutral slate dark */
-      --text-muted: #64748b;        /* neutral slate muted */
+      --text-dark: #1e293b;         /* dark slate text */
+      --text-muted: #64748b;        /* muted slate text */
     }
 
     body {
@@ -15,7 +15,7 @@
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    /* inputs & cards */
+    /* inputs and cards */
     .input-field {
       background: #ffffff;
       border: 1.5px solid #dce3ec;
@@ -37,7 +37,7 @@
       font-weight: 300;
     }
 
-    /* dark blue button (matches admin dashboard) */
+    /* login button */
     .btn-login {
       background: var(--primary-dark);
       color: white;
@@ -96,7 +96,7 @@
       border: none;
       font-size: 1rem;
       padding: 8px;
-      z-index: 10;
+      z-index: 25;
       border-radius: 50%;
       transition: all 0.2s;
       display: flex;
@@ -104,6 +104,8 @@
       justify-content: center;
       width: 36px;
       height: 36px;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .toggle-pw:hover {
       color: var(--primary-dark);
@@ -233,20 +235,123 @@
       -webkit-text-fill-color: var(--text-dark) !important;
     }
 
-    /* hide browser password toggle */
-    input[type="password"]::-ms-reveal,
-    input[type="password"]::-webkit-clear-button,
-    input[type="password"]::-webkit-password-toggle {
+    /* hide browser password toggle across all browsers */
+    input[type="password"]::-ms-reveal {
       display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-      -webkit-appearance: none !important;
-      appearance: none !important;
       width: 0 !important;
       height: 0 !important;
-      position: absolute !important;
-      left: -9999px !important;
+    }
+    input[type="password"]::-webkit-clear-button {
+      display: none !important;
+      -webkit-appearance: none !important;
+    }
+    input[type="password"]::-webkit-password-toggle {
+      display: none !important;
+      -webkit-appearance: none !important;
+    }
+
+    .modal-box label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 0.35rem;
+      text-align: left;
+    }
+    .modal-box .input-field {
+      padding: 0.75rem 1.1rem;
+      font-size: 0.9rem;
+    }
+    .modal-box .pw-wrapper .input-field {
+      padding-right: 3.2rem;
+    }
+    .modal-box .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    /* password rules panel */
+    .pw-popover {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                  opacity 0.2s ease, 
+                  margin-top 0.2s ease,
+                  padding 0.2s ease;
+      background: #f8fafc;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      padding: 0 0.85rem;
+      margin-top: 0;
+    }
+    .form-group:focus-within .pw-popover,
+    .pw-popover.active {
+      max-height: 260px;
+      opacity: 1;
+      border-color: #e2e8f0;
+      padding: 0.75rem 0.85rem;
+      margin-top: 0.5rem;
+    }
+
+    .pw-strength-track {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 0.35rem;
+    }
+    .track-bar {
+      flex: 1;
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 9999px;
+      transition: background 0.25s ease;
+    }
+    .track-bar.active.weak   { background: #ef4444; }
+    .track-bar.active.medium { background: #f59e0b; }
+    .track-bar.active.strong { background: #10b981; }
+
+    .pw-strength-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+
+    .pw-req-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem 0.6rem;
+    }
+    @media (max-width: 480px) {
+      .pw-req-grid { grid-template-columns: 1fr; }
+    }
+
+    .req-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      color: #64748b;
+      transition: color 0.15s ease;
+    }
+    .req-item .icon {
+      font-size: 0.65rem;
+      color: #94a3b8;
+      display: inline-flex;
+      align-items: center;
+    }
+    .req-item.valid {
+      color: #0f172a;
+      font-weight: 500;
+    }
+    .req-item.valid .icon {
+      color: #10b981;
+    }
+
+    .pw-match-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 0.35rem;
+      min-height: 1.1rem;
     }
 
     .spinner {
@@ -260,6 +365,62 @@
     }
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    /* portal switch button */
+    .portal-divider {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1.25rem 0 1rem;
+    }
+    .portal-divider::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background: #e2e8f0;
+    }
+    .portal-divider span {
+      position: relative;
+      background: #ffffff;
+      padding: 0 0.75rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .btn-portal-switch {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.5rem 1.15rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-portal-switch:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+    }
+    .btn-portal-switch i {
+      color: var(--primary-dark);
+      font-size: 0.8rem;
     }
 
     /* accent links */
