@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="icon" type="image/jpeg" href="images/borongan-logo.jpg" />
+    <link rel="apple-touch-icon" href="images/borongan-logo.jpg" />
     <link rel="stylesheet" href="assets/css/confirm-modal.css?v=20260812" />
     <link rel="stylesheet" href="assets/css/driver-dashboard.css?v=20260812-driver-notifications" />
 </head>
@@ -423,11 +425,21 @@
             <form id="passwordForm" class="password-form">
                 <div>
                     <label for="newPassword">New password</label>
-                    <input type="password" id="newPassword" class="input-field" minlength="4" autocomplete="new-password" required>
+                    <div class="pw-wrapper">
+                        <input type="password" id="newPassword" class="input-field" minlength="4" autocomplete="new-password" required>
+                        <button type="button" id="toggleNewPassword" class="toggle-pw" aria-label="Toggle new password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label for="confirmPassword">Confirm new password</label>
-                    <input type="password" id="confirmPassword" class="input-field" minlength="4" autocomplete="new-password" required>
+                    <div class="pw-wrapper">
+                        <input type="password" id="confirmPassword" class="input-field" minlength="4" autocomplete="new-password" required>
+                        <button type="button" id="toggleConfirmPassword" class="toggle-pw" aria-label="Toggle confirm password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <p id="passwordError" class="password-error" role="alert" hidden></p>
                 <div class="flex gap-3 password-modal-actions">

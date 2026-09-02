@@ -13,6 +13,21 @@
     setTimeout(() => successDiv.classList.remove("show"), 5000);
   }
 
+  // Password toggle
+  if (toggleBtn && passwordField) {
+    toggleBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const isPass = passwordField.type === "password";
+      passwordField.type = isPass ? "text" : "password";
+      const icon = this.querySelector("i");
+      if (icon) {
+        icon.className = isPass ? "fas fa-eye-slash" : "fas fa-eye";
+      }
+      passwordField.focus();
+    });
+  }
+
   // session check (driver)
   // ── LINES 17-148: REPLACE WITH THIS ──────────────────────────
 

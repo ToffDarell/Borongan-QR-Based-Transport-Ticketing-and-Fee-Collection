@@ -826,9 +826,40 @@ const ConfirmModal = {
             form.reset();
             error.textContent = '';
             error.hidden = true;
+            ['newPassword', 'confirmPassword'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.type = 'password';
+            });
+            ['toggleNewPassword', 'toggleConfirmPassword'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-eye';
+                }
+            });
             openModal('passwordModal');
             requestAnimationFrame(() => document.getElementById('newPassword').focus());
         }
+
+        function setupPasswordToggle(btnId, inputId) {
+            const btn = document.getElementById(btnId);
+            const input = document.getElementById(inputId);
+            if (btn && input) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isPass = input.type === 'password';
+                    input.type = isPass ? 'text' : 'password';
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+                    }
+                    input.focus();
+                });
+            }
+        }
+        setupPasswordToggle('toggleNewPassword', 'newPassword');
+        setupPasswordToggle('toggleConfirmPassword', 'confirmPassword');
 
         document.getElementById('passwordForm').addEventListener('submit', function(e) {
             e.preventDefault();

@@ -1454,3 +1454,32 @@
                 display: block;
             }
         }
+
+        .pw-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .pw-wrapper .input-field {
+            padding-right: 2.75rem;
+        }
+        .toggle-pw {
+            position: absolute;
+            right: 0.85rem;
+            background: none;
+            border: none;
+            color: #9aafc0;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .toggle-pw:hover {
+            color: var(--primary);
+        }
+        .toggle-pw i {
+            pointer-events: none;
+            font-size: 1rem;
+        }

@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const usernameField = document.getElementById("username");
   const passwordField = document.getElementById("password");
   const toggleBtn = document.getElementById("togglePass");
@@ -12,6 +12,21 @@
   const modalMsg = document.getElementById("modalMsg");
   const modalCancel = document.getElementById("modalCancel");
   const modalSend = document.getElementById("modalSend");
+
+  // Password toggle
+  if (toggleBtn && passwordField) {
+    toggleBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const isPass = passwordField.type === "password";
+      passwordField.type = isPass ? "text" : "password";
+      const icon = this.querySelector("i");
+      if (icon) {
+        icon.className = isPass ? "fas fa-eye-slash" : "fas fa-eye";
+      }
+      passwordField.focus();
+    });
+  }
 
   // Login handler — calls PHP API
   function handleLogin() {
