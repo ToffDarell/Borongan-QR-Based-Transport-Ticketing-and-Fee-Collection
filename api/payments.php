@@ -31,15 +31,15 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("
         SELECT 
-            p.receipt_no AS id, 
-            p.transaction_date AS date, 
-            p.transaction_time AS time, 
+            p.receipt_no AS \"id\", 
+            p.transaction_date AS \"date\", 
+            p.transaction_time AS \"time\", 
             p.amount, 
-            p.driver_id AS driverId, 
-            p.vehicle_id AS vehicleId,
-            d.full_name AS driverName,
-            COALESCE(v.vehicle_type, d.vehicle_type) AS vehicleType,
-            COALESCE(v.plate_number, d.plate_number) AS plateNumber
+            p.driver_id AS \"driverId\", 
+            p.vehicle_id AS \"vehicleId\",
+            d.full_name AS \"driverName\",
+            COALESCE(v.vehicle_type, d.vehicle_type) AS \"vehicleType\",
+            COALESCE(v.plate_number, d.plate_number) AS \"plateNumber\"
         FROM payments p 
         LEFT JOIN drivers d ON p.driver_id = d.driver_id 
         LEFT JOIN vehicles v ON p.vehicle_id = v.vehicle_id 
@@ -76,10 +76,10 @@ if ($method === 'POST') {
     // cannot create a transaction with an unrelated vehicle.
     $driverStmt = $pdo->prepare("
         SELECT
-            d.full_name AS driverName,
-            d.vehicle_type AS vehicleType,
-            d.plate_number AS plateNumber,
-            v.vehicle_id AS vehicleId
+            d.full_name AS \"driverName\",
+            d.vehicle_type AS \"vehicleType\",
+            d.plate_number AS \"plateNumber\",
+            v.vehicle_id AS \"vehicleId\"
         FROM drivers d
         LEFT JOIN vehicles v ON v.driver_id = d.driver_id
         WHERE d.driver_id = ?
@@ -98,19 +98,34 @@ if ($method === 'POST') {
     // Older registrations may not have a row in vehicles yet. Create the
     // linked vehicle on first collection so future transactions are relational.
     if (!$vehicleId && !empty($driver['plateNumber']) && !empty($driver['vehicleType'])) {
-        $vehicleInsert = $pdo->prepare(
-            "INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, 'Active')"
-        );
-        try {
-            $vehicleInsert->execute([$driver['plateNumber'], $driver['vehicleType'], $driverId]);
-            $vehicleId = $pdo->lastInsertId();
-        } catch (PDOException $e) {
-            // If the plate already exists, reuse the existing linked row.
-            $vehicleLookup = $pdo->prepare(
-                "SELECT vehicle_id FROM vehicles WHERE plate_number = ? LIMIT 1"
+        if (strtolower(DB_DRIVER) === 'pgsql') {
+            $vehicleInsert = $pdo->prepare(
+                "INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, 'Active') RETURNING vehicle_id"
             );
-            $vehicleLookup->execute([$driver['plateNumber']]);
-            $vehicleId = $vehicleLookup->fetchColumn() ?: null;
+            try {
+                $vehicleInsert->execute([$driver['plateNumber'], $driver['vehicleType'], $driverId]);
+                $vehicleId = $vehicleInsert->fetchColumn();
+            } catch (PDOException $e) {
+                $vehicleLookup = $pdo->prepare(
+                    "SELECT vehicle_id FROM vehicles WHERE plate_number = ? LIMIT 1"
+                );
+                $vehicleLookup->execute([$driver['plateNumber']]);
+                $vehicleId = $vehicleLookup->fetchColumn() ?: null;
+            }
+        } else {
+            $vehicleInsert = $pdo->prepare(
+                "INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, 'Active')"
+            );
+            try {
+                $vehicleInsert->execute([$driver['plateNumber'], $driver['vehicleType'], $driverId]);
+                $vehicleId = $pdo->lastInsertId();
+            } catch (PDOException $e) {
+                $vehicleLookup = $pdo->prepare(
+                    "SELECT vehicle_id FROM vehicles WHERE plate_number = ? LIMIT 1"
+                );
+                $vehicleLookup->execute([$driver['plateNumber']]);
+                $vehicleId = $vehicleLookup->fetchColumn() ?: null;
+            }
         }
     }
 

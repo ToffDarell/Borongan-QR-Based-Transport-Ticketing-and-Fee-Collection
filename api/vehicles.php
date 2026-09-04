@@ -8,12 +8,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $stmt = $pdo->query("
         SELECT 
-            v.vehicle_id AS vehicleId,
-            v.plate_number AS plateNumber, 
-            v.vehicle_type AS vehicleType, 
-            v.driver_id AS driverId, 
+            v.vehicle_id AS \"vehicleId\",
+            v.plate_number AS \"plateNumber\", 
+            v.vehicle_type AS \"vehicleType\", 
+            v.driver_id AS \"driverId\", 
             v.status, 
-            d.full_name as driver_name 
+            d.full_name as \"driver_name\" 
         FROM vehicles v 
         LEFT JOIN drivers d ON v.driver_id = d.driver_id 
         ORDER BY v.created_at DESC
@@ -23,7 +23,18 @@ if ($method === 'GET') {
 
 if ($method === 'POST') {
     $b = json_decode(file_get_contents('php://input'), true);
-    $stmt = $pdo->prepare("INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE vehicle_type=VALUES(vehicle_type), driver_id=VALUES(driver_id), status=VALUES(status)");
+    if (strtolower(DB_DRIVER) === 'pgsql') {
+        $stmt = $pdo->prepare("
+            INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (plate_number) DO UPDATE SET
+                vehicle_type = EXCLUDED.vehicle_type,
+                driver_id = EXCLUDED.driver_id,
+                status = EXCLUDED.status
+        ");
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE vehicle_type=VALUES(vehicle_type), driver_id=VALUES(driver_id), status=VALUES(status)");
+    }
     $stmt->execute([$b['plateNumber'], $b['vehicleType'], $b['driverId'] ?: null, $b['status'] ?? 'Active']);
     respond(['success' => true]);
 }

@@ -8,20 +8,20 @@ $vehicleTypes = ['Tricycle', 'Jeepney', 'Multicab', 'Bus'];
 function getDriverRecord($pdo, $driverId) {
     $stmt = $pdo->prepare("
         SELECT
-            d.driver_id AS driverId,
-            d.user_id AS userId,
-            d.full_name AS fullName,
+            d.driver_id AS \"driverId\",
+            d.user_id AS \"userId\",
+            d.full_name AS \"fullName\",
             d.address,
             d.contact,
             d.birthdate,
             d.gender,
-            d.vehicle_type AS vehicleType,
-            d.plate_number AS plateNumber,
-            d.license_no AS licenseNo,
+            d.vehicle_type AS \"vehicleType\",
+            d.plate_number AS \"plateNumber\",
+            d.license_no AS \"licenseNo\",
             d.photo,
             d.status,
-            d.created_at AS registrationDate,
-            d.license_expiration AS licenseExpiration,
+            d.created_at AS \"registrationDate\",
+            d.license_expiration AS \"licenseExpiration\",
             u.username
         FROM drivers d
         LEFT JOIN users u ON d.user_id = u.id
@@ -73,20 +73,20 @@ if ($method === 'GET') {
 
     $stmt = $pdo->query("
         SELECT
-            d.driver_id AS driverId,
-            d.user_id AS userId,
-            d.full_name AS fullName,
+            d.driver_id AS \"driverId\",
+            d.user_id AS \"userId\",
+            d.full_name AS \"fullName\",
             d.address,
             d.contact,
             d.birthdate,
             d.gender,
-            d.vehicle_type AS vehicleType,
-            d.plate_number AS plateNumber,
-            d.license_no AS licenseNo,
+            d.vehicle_type AS \"vehicleType\",
+            d.plate_number AS \"plateNumber\",
+            d.license_no AS \"licenseNo\",
             d.photo,
             d.status,
-            d.created_at AS registrationDate,
-            d.license_expiration AS licenseExpiration,
+            d.created_at AS \"registrationDate\",
+            d.license_expiration AS \"licenseExpiration\",
             u.username
         FROM drivers d
         LEFT JOIN users u ON d.user_id = u.id
@@ -203,12 +203,21 @@ if ($method === 'POST') {
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, 'driver')")
-            ->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
-        $userId = $pdo->lastInsertId();
+        if (strtolower(DB_DRIVER) === 'pgsql') {
+            $userStmt = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, 'driver') RETURNING id");
+            $userStmt->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
+            $userId = (int)$userStmt->fetchColumn();
 
-        $lastNumber = (int)$pdo->query("SELECT COALESCE(MAX(CAST(SUBSTRING(driver_id, 4) AS UNSIGNED)), 0) FROM drivers")->fetchColumn();
-        $driverId = 'DR-' . str_pad((string)($lastNumber + 1), 4, '0', STR_PAD_LEFT);
+            $lastNumber = (int)$pdo->query("SELECT COALESCE(MAX(CAST(SUBSTRING(driver_id FROM 4) AS INTEGER)), 0) FROM drivers")->fetchColumn();
+            $driverId = 'DR-' . str_pad((string)($lastNumber + 1), 4, '0', STR_PAD_LEFT);
+        } else {
+            $pdo->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, 'driver')")
+                ->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
+            $userId = (int)$pdo->lastInsertId();
+
+            $lastNumber = (int)$pdo->query("SELECT COALESCE(MAX(CAST(SUBSTRING(driver_id, 4) AS UNSIGNED)), 0) FROM drivers")->fetchColumn();
+            $driverId = 'DR-' . str_pad((string)($lastNumber + 1), 4, '0', STR_PAD_LEFT);
+        }
 
         $pdo->prepare("
             INSERT INTO drivers (driver_id, user_id, full_name, address, contact, birthdate, gender, vehicle_type, plate_number, license_no, photo, status, license_expiration)
@@ -220,9 +229,15 @@ if ($method === 'POST') {
             $plateNumber, $licenseNo, (string)($body['photo'] ?? ''), ($body['licenseExpiration'] ?? '') ?: null
         ]);
 
-        $pdo->prepare("INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, 'Active')")
-            ->execute([$plateNumber, $vehicleType, $driverId]);
-        $vehicleId = $pdo->lastInsertId();
+        if (strtolower(DB_DRIVER) === 'pgsql') {
+            $vehStmt = $pdo->prepare("INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, 'Active') RETURNING vehicle_id");
+            $vehStmt->execute([$plateNumber, $vehicleType, $driverId]);
+            $vehicleId = (int)$vehStmt->fetchColumn();
+        } else {
+            $pdo->prepare("INSERT INTO vehicles (plate_number, vehicle_type, driver_id, status) VALUES (?, ?, ?, 'Active')")
+                ->execute([$plateNumber, $vehicleType, $driverId]);
+            $vehicleId = (int)$pdo->lastInsertId();
+        }
 
         $pdo->prepare("INSERT INTO qr_codes (driver_id, vehicle_id, qr_data, status) VALUES (?, ?, ?, 'Active')")
             ->execute([$driverId, $vehicleId, buildQrPayload($driverId, $plateNumber, $vehicleType)]);

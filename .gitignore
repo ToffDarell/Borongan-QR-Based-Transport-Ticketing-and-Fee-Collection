@@ -1,0 +1,7 @@
+# Local DB credentials - never commit
+api/db_config.php
+
+# OS / editor junk
+Thumbs.db
+.DS_Store
+*.log

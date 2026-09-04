@@ -18,19 +18,63 @@ if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
     session_start();
 }
 
-$host = 'localhost';
-$db   = 'borongan_db';
-$user = 'root';      // xampp default user
-$pass = '';          // blank password
-$port = 3307;        // mysql port
+require_once __DIR__ . '/db_config.php';
+
+$driver = strtolower(DB_DRIVER);
 
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    if ($driver === 'pgsql') {
+        if (!empty(SUPABASE_URI)) {
+            $uriParts = parse_url(SUPABASE_URI);
+            $host = $uriParts['host'] ?? '';
+            $port = $uriParts['port'] ?? 5432;
+            $user = isset($uriParts['user']) ? urldecode($uriParts['user']) : 'postgres';
+            $pass = isset($uriParts['pass']) ? urldecode($uriParts['pass']) : '';
+            $db   = isset($uriParts['path']) ? ltrim($uriParts['path'], '/') : 'postgres';
+            $ssl  = 'require';
+        } else {
+            $host = SUPABASE_HOST;
+            $port = SUPABASE_PORT;
+            $db   = SUPABASE_DB;
+            $user = SUPABASE_USER;
+            $pass = SUPABASE_PASS;
+            $ssl  = SUPABASE_SSLMODE;
+        }
+
+        if ((empty(SUPABASE_URI) && (strpos($host, 'your-project-ref') !== false || $pass === 'YOUR_SUPABASE_DB_PASSWORD')) || empty($host) || empty($pass)) {
+            http_response_code(500);
+            die(json_encode([
+                'success' => false,
+                'error' => 'Supabase connection credentials not configured. Please enter your Supabase URI or credentials in api/db_config.php'
+            ]));
+        }
+
+        $dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode={$ssl}";
+        $pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_CASE => PDO::CASE_NATURAL
+        ]);
+    } else {
+        $host = MYSQL_HOST;
+        $port = MYSQL_PORT;
+        $db   = MYSQL_DB;
+        $user = MYSQL_USER;
+        $pass = MYSQL_PASS;
+
+        $dsn = "mysql:host={$host};port={$port};dbname={$db};charset=utf8";
+        $pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+    }
 } catch (PDOException $e) {
     http_response_code(500);
-    die(json_encode(['success' => false, 'error' => 'DB connection failed: ' . $e->getMessage()]));
+    $msg = 'DB connection failed: ' . $e->getMessage();
+    if ($driver === 'pgsql') {
+        $msg .= '. TIP: If using Supabase on local network, use the Supabase Connection Pooler host (port 6543) in api/db_config.php';
+    }
+    die(json_encode(['success' => false, 'error' => $msg]));
 }
 
 function respond($data, $code = 200) {

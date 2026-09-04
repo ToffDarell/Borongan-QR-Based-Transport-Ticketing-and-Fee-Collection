@@ -21,17 +21,17 @@ function getQrDriverData($pdo, $driverId) {
 if ($method === 'GET') {
     $stmt = $pdo->query("
         SELECT
-            q.qr_id AS qrId,
-            q.driver_id AS driverId,
-            q.vehicle_id AS vehicleId,
-            q.qr_data AS qrData,
+            q.qr_id AS \"qrId\",
+            q.driver_id AS \"driverId\",
+            q.vehicle_id AS \"vehicleId\",
+            q.qr_data AS \"qrData\",
             q.status,
-            q.last_scanned AS lastScanned,
-            q.times_used AS timesUsed,
-            q.created_at AS createdAt,
-            d.full_name AS fullName,
-            d.vehicle_type AS vehicleType,
-            d.plate_number AS plateNumber
+            q.last_scanned AS \"lastScanned\",
+            q.times_used AS \"timesUsed\",
+            q.created_at AS \"createdAt\",
+            d.full_name AS \"fullName\",
+            d.vehicle_type AS \"vehicleType\",
+            d.plate_number AS \"plateNumber\"
         FROM qr_codes q
         LEFT JOIN drivers d ON q.driver_id = d.driver_id
         ORDER BY q.created_at DESC
@@ -63,9 +63,15 @@ if ($method === 'POST') {
         $pdo->prepare('UPDATE qr_codes SET vehicle_id = ?, qr_data = ?, status = ? WHERE qr_id = ?')
             ->execute([$driver['vehicle_id'] ?: null, $payload, $status, $qrId]);
     } else {
-        $pdo->prepare("INSERT INTO qr_codes (driver_id, vehicle_id, qr_data, status) VALUES (?, ?, ?, ?)")
-            ->execute([$driverId, $driver['vehicle_id'] ?: null, $payload, $status]);
-        $qrId = $pdo->lastInsertId();
+        if (strtolower(DB_DRIVER) === 'pgsql') {
+            $insertQr = $pdo->prepare("INSERT INTO qr_codes (driver_id, vehicle_id, qr_data, status) VALUES (?, ?, ?, ?) RETURNING qr_id");
+            $insertQr->execute([$driverId, $driver['vehicle_id'] ?: null, $payload, $status]);
+            $qrId = (int)$insertQr->fetchColumn();
+        } else {
+            $pdo->prepare("INSERT INTO qr_codes (driver_id, vehicle_id, qr_data, status) VALUES (?, ?, ?, ?)")
+                ->execute([$driverId, $driver['vehicle_id'] ?: null, $payload, $status]);
+            $qrId = $pdo->lastInsertId();
+        }
     }
 
     respond(['success' => true, 'qrId' => $qrId, 'qrData' => $payload]);

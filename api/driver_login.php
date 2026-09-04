@@ -5,23 +5,23 @@ require 'config.php';
 function getDriverLoginRecord($pdo, $where, $value) {
     $stmt = $pdo->prepare("
         SELECT
-            u.id AS userId,
+            u.id AS \"userId\",
             u.username,
             u.password,
             u.role,
-            d.driver_id AS driverId,
-            d.full_name AS fullName,
-            d.vehicle_type AS vehicleType,
-            d.plate_number AS plateNumber,
+            d.driver_id AS \"driverId\",
+            d.full_name AS \"fullName\",
+            d.vehicle_type AS \"vehicleType\",
+            d.plate_number AS \"plateNumber\",
             d.photo,
             d.contact,
             d.address,
             d.birthdate,
             d.gender,
-            d.license_no AS licenseNo,
+            d.license_no AS \"licenseNo\",
             d.status,
-            d.created_at AS registrationDate,
-            d.license_expiration AS licenseExpiration
+            d.created_at AS \"registrationDate\",
+            d.license_expiration AS \"licenseExpiration\"
         FROM users u
         JOIN drivers d ON d.user_id = u.id
         WHERE $where AND u.role = 'driver'
