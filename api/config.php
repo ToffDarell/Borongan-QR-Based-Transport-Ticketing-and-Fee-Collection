@@ -50,10 +50,14 @@ try {
         }
 
         $dsn = "pgsql:host={$host};port={$port};dbname={$db};sslmode={$ssl}";
+        // keep the connection alive between requests so we don't pay the
+        // tls + auth round trip to supabase on every single api call
         $pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_CASE => PDO::CASE_NATURAL
+            PDO::ATTR_CASE => PDO::CASE_NATURAL,
+            PDO::ATTR_PERSISTENT => true,
+            PDO::ATTR_TIMEOUT => 8
         ]);
     } else {
         $host = MYSQL_HOST;

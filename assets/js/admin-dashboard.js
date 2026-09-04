@@ -109,20 +109,21 @@ function buildQrPayload(driver) {
   });
 }
 
-// Load all data from API on start
+// Load everything the dashboard needs in a single request. Falls back to the
+// old per-resource endpoints if the combined one is unavailable.
 async function loadAllDataFromDB() {
-  const [driversRes, vehiclesRes, qrRes, paymentsRes, feesRes] = await Promise.all([
-    fetch("api/drivers.php").then((r) => r.json()),
-    fetch("api/vehicles.php").then((r) => r.json()),
-    fetch("api/qr_codes.php").then((r) => r.json()),
-    fetch("api/payments.php").then((r) => r.json()),
-    fetch("api/fees.php").then((r) => r.json()),
-  ]);
-  if (driversRes.success) drivers = driversRes.drivers;
-  if (vehiclesRes.success) vehicles = vehiclesRes.vehicles.map(normalizeVehicle);
-  if (qrRes.success) qrCodes = (qrRes.qrCodes || qrRes.qr_codes || []).map(normalizeQrCode);
-  if (paymentsRes.success) transactions = paymentsRes.payments.map(normalizeTransaction);
-  if (feesRes.success) fees = feesRes.fees;
+  try {
+    const res = await fetch("api/dashboard.php").then((r) => r.json());
+    if (!res.success) throw new Error(res.error || "dashboard load failed");
+    drivers = res.drivers || [];
+    vehicles = (res.vehicles || []).map(normalizeVehicle);
+    qrCodes = (res.qrCodes || []).map(normalizeQrCode);
+    transactions = (res.payments || []).map(normalizeTransaction);
+    fees = res.fees || fees;
+  } catch (err) {
+    console.error("loadAllDataFromDB:", err);
+    showToast("Couldn't refresh data from the server.", "error");
+  }
 }
 
 function escapeHtml(value) {
@@ -322,52 +323,6 @@ function addActivity(action, details) {
   renderActivities();
 }
 
-function navigateTo(page) {
-  document
-    .querySelectorAll(".page-section")
-    .forEach((s) => s.classList.remove("active"));
-  const pg = document.getElementById("page-" + page);
-  if (pg) pg.classList.add("active");
-  document
-    .querySelectorAll(".sidebar-item")
-    .forEach((i) => i.classList.remove("active"));
-  document
-    .querySelector(`.sidebar-item[data-page="${page}"]`)
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(title, {
-      body: message,
-      icon: "images/borongan-logo.jpg"
-    });
-  }
-}
-
-function addActivity(action, details) {
-  const now = new Date();
-  let badgeClass = "updated";
-  let icon = "fa-pencil";
-  if (action.includes("Added")) {
-    badgeClass = "added";
-    icon = "fa-plus-circle";
-  } else if (action.includes("Deleted")) {
-    badgeClass = "deleted";
-    icon = "fa-trash";
-  } else if (action.includes("Payment")) {
-    badgeClass = "payment";
-    icon = "fa-credit-card";
-  }
-  activities.unshift({
-    action,
-    details,
-    time: now.toTimeString().slice(0, 5),
-    timestamp: now.toISOString(),
-    badgeClass,
-    icon,
-  });
-  if (activities.length > 50) activities.pop();
-  localStorage.setItem("borongan_activities", JSON.stringify(activities));
-  renderActivities();
-}
-
 function renderActivities() {
   const el = document.getElementById("recentActivities");
   if (!el) return;
@@ -411,8 +366,9 @@ function navigateTo(page) {
 
 function initSidebar() {
   document.querySelectorAll(".sidebar-item[data-page]").forEach((item) => {
-    item.addEventListener("click", async function () {
-      await loadAllDataFromDB();
+    item.addEventListener("click", function () {
+      // switch the page immediately so the click feels instant, then refresh
+      // the data in the background and re-render when it arrives
       document
         .querySelectorAll(".page-section")
         .forEach((s) => s.classList.remove("active"));
@@ -422,12 +378,22 @@ function initSidebar() {
         .querySelectorAll(".sidebar-item")
         .forEach((i) => i.classList.remove("active"));
       this.classList.add("active");
-      if (this.dataset.page === "settings") {
-        loadFees();
-        loadAdminProfile();
-      }
       if (window.innerWidth <= 768)
         document.getElementById("sidebar").classList.remove("open");
+
+      const page = this.dataset.page;
+      loadAllDataFromDB().then(() => {
+        updateDashboard();
+        renderDrivers();
+        renderVehicles();
+        renderQRs();
+        renderTransactions();
+        renderActivities();
+        if (page === "settings") {
+          loadFees();
+          loadAdminProfile();
+        }
+      });
     });
   });
 }
@@ -541,7 +507,7 @@ function startPaymentPolling() {
     } catch (e) {
       // fail silently
     }
-  }, 4000);
+  }, 15000);
 }
 
 function globalSearch() {
@@ -857,8 +823,8 @@ function saveDriver() {
   }
 }
 
-function editDriver(id) {
-  const d = drivers.find((x) => x.driverId === id);
+async function editDriver(id) {
+  let d = drivers.find((x) => x.driverId === id);
   if (!d) return;
   document.getElementById("editDriverId").value = id;
   document.getElementById("dFullName").value = d.fullName || "";
@@ -871,19 +837,33 @@ function editDriver(id) {
   document.getElementById("dLicenseNo").value = d.licenseNo || "";
   document.getElementById("dUsername").value = d.username || "";
   document.getElementById("dPassword").value = "";
-
-  // Load existing photo if available
-  if (d.photo) {
-    document.getElementById("photoPlaceholder").style.display = "none";
-    const preview = document.getElementById("photoPreview");
-    preview.src = d.photo;
-    preview.style.display = "block";
-  } else {
-    resetPhotoPreview();
-  }
+  resetPhotoPreview();
 
   document.getElementById("driverModalTitle").textContent = "Edit Driver";
   openModal("driverModal");
+
+  // the list no longer carries the photo blob, so pull the full record for the
+  // preview only when the driver actually has one
+  if (d.photo) {
+    showDriverPhotoPreview(d.photo);
+  } else if (d.hasPhoto) {
+    try {
+      const res = await fetch("api/drivers.php?id=" + encodeURIComponent(id)).then((r) => r.json());
+      if (res.success && res.driver && res.driver.photo && document.getElementById("editDriverId").value === id) {
+        d.photo = res.driver.photo; // cache so a later save keeps it
+        showDriverPhotoPreview(res.driver.photo);
+      }
+    } catch (err) {
+      console.error("load driver photo:", err);
+    }
+  }
+}
+
+function showDriverPhotoPreview(src) {
+  document.getElementById("photoPlaceholder").style.display = "none";
+  const preview = document.getElementById("photoPreview");
+  preview.src = src;
+  preview.style.display = "block";
 }
 
 function confirmDeleteDriver(id) {
